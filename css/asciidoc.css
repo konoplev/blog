@@ -671,14 +671,3 @@ img {
 video {
     max-width: 85vw;
 }
-
-@media all and (max-width: 600px) {
-    table {
-        width: 55vw !important;
-        font-size: 3vw;
-    }
-
-    pre {
-        font-size: large;
-    }
-}
