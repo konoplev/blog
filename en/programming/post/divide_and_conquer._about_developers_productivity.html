@@ -12,13 +12,15 @@
     <link rel="stylesheet" href="../../../css/ionicons.min.css">
     <link rel="stylesheet" href="../../../css/pace.css">
     <link rel="stylesheet" href="../../../css/custom.css">
-    <link rel="stylesheet" href="../../../css/lc_gif_player.css">
+    <link rel="stylesheet" href="../../../css/asciidoc.css">
+    <link rel="stylesheet" href="../../../css/idea.min.css">
 
     <!-- js -->
     <script src="../../../js/jquery-2.1.3.min.js"></script>
     <script src="../../../js/bootstrap.min.js"></script>
     <script src="../../../js/pace.min.js"></script>
     <script src="../../../js/modernizr.custom.js"></script>
+    <script src="../../../js/highlight.min.js"></script>
 </head>
 
 <body id="single">
@@ -77,14 +79,14 @@
                                                                     <a href="../tag/productivity/1.html"> #productivity</a>
                                                             </span>
 
-                                                </div>
+                                                    </div>
                         <figure class="img-responsive-center">
                             <img class="img-responsive" src="./divide_and_conquer._about_developers_productivity.png"
                                  alt="Developer Image"/>
                         </figure>
                     </header>
                     <div class="entry-content clearfix">
-                                            <div id="preamble">
+                                                <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
 <p>It&#8217;s really difficult to measure developer productivity. Lines of code, number of features or number of bugs are bad metrics. But intuitively we all know what productivity is. For me being productive means to do things as quickly as possible and minimize a wasted time as much as possible. This post is about ways to improve productivity.</p>
@@ -226,7 +228,7 @@ public class UserDto {
 </div>
 </div>
 <div class="sect3">
-<h4 id="_test_it_while_it_s_manageable">Test it while it&#8217;s manageable</h4>
+<h4 id="_test_it_while_its_manageable">Test it while it&#8217;s manageable</h4>
 <div class="paragraph">
 <p>Everyone makes mistakes. Every software has bugs. Our goal is to minimize them and catch the most critical ones at early stages. Some developers think that writing tests are wasting of time. Or at least it has low priority than code. I can&#8217;t be productive without tests. Unit, integration, end-to-end, performance tests are the only way to make sure that my code works. If my code doesn&#8217;t work, if it has critical issues then implementing it was the wasting of time. I&#8217;m not a big fan of TDD but I&#8217;m pretty sure that tests shouldn&#8217;t be postponed. It shouldn&#8217;t be the last step of development. When you have a big amount of code and it has multiple problems then fixing these problems could take more time than implementing the code. Tests allow me to change my code easily because I know that I didn&#8217;t break anything, my tests passed. Fixing a code without tests is unpredictable. You fix something but break another part. You could get a combinatory explosion of bugs. And sometimes it&#8217;s really faster to reimplement everything from scratch than to fix all bugs in existing code.</p>
 </div>
@@ -431,7 +433,7 @@ Why this way is not ok?</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_don_t_fight_with_technologies">Don&#8217;t fight with technologies</h3>
+<h3 id="_dont_fight_with_technologies">Don&#8217;t fight with technologies</h3>
 <div class="paragraph">
 <p>One more reason to learn new technology before adding it to your project is…​ It can be not applicable to your project and to your task. If you don’t know how the technology works you can’t be sure that the technology does what you expect. Our deployment is slow, let’s use another CI/CD system. We have lots of data let’s start using Hadoop. Our SQL database is very slow, we have to switch to NoSQL database. Our NoSQL database makes our data inconsistent, we have to use SQL database instead because it guarantees consistency. I heard such proposals many many times.</p>
 </div>
@@ -573,7 +575,7 @@ public class KeyIsNotImmutable {
 <div class="paragraph">
 <p>Here are results:</p>
 </div>
-<table class="tableblock frame-all grid-all spread" style="float: left;">
+<table class="tableblock frame-all grid-all stretch left">
 <colgroup>
 <col style="width: 11.1111%;">
 <col style="width: 11.1111%;">
@@ -625,7 +627,70 @@ public class KeyIsNotImmutable {
                     </div>
                     <div class="height-40px"></div>
                     <div>
-                        <h4 class="text-center">Like it? Share it!</h4>
+                        <h4 class="text-center">Receive new posts to your email</h4>
+                        <div class="height-15px"></div>
+                        <ul class="social">
+                            <!-- Begin Mailchimp Signup Form -->
+                            <div id="mc_embed_signup">
+                                <form
+                                        action="https://konoplev.us9.list-manage.com/subscribe/post?u=c44fad85d7459fe096d5bf7f2&amp;id=73cb044c01"
+                                        method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form"
+                                        class="validate contact-form" target="_blank" novalidate>
+                                    <div id="mc_embed_signup_scroll">
+                                        <ul>
+                                            <li>
+                                                <div>
+                                                    <input type="email" placeholder="your email" value="" name="EMAIL" class="required email"
+                                                           id="mce-EMAIL">
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div id="mce-responses" class="clear foot">
+                                                    <div class="response" id="mce-error-response" style="display:none">
+                                                    </div>
+                                                    <div class="response" id="mce-success-response"
+                                                         style="display:none"></div>
+                                                </div>
+                                                <!-- real people should not fill this in and expect good things - do not remove this or risk form bot signups-->
+                                                <div style="position: absolute; left: -5000px;" aria-hidden="true">
+                                                    <input type="text" name="b_c44fad85d7459fe096d5bf7f2_73cb044c01"
+                                                           tabindex="-1" value=""></div>
+                                                <div class="optionalParent">
+                                                    <div class="clear foot">
+                                                        <input type="submit" value="Subscribe" name="subscribe"
+                                                               id="mc-embedded-subscribe"
+                                                               class="btn-send btn-5 btn-5b">
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </form>
+                            </div>
+                            <script type='text/javascript'
+                                    src='//s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js'></script>
+                            <script type='text/javascript'>(function ($) {
+                                window.fnames = new Array();
+                                window.ftypes = new Array();
+                                fnames[0] = 'EMAIL';
+                                ftypes[0] = 'email';
+                                fnames[1] = 'FNAME';
+                                ftypes[1] = 'text';
+                                fnames[2] = 'LNAME';
+                                ftypes[2] = 'text';
+                                fnames[3] = 'ADDRESS';
+                                ftypes[3] = 'address';
+                                fnames[4] = 'PHONE';
+                                ftypes[4] = 'phone';
+                                fnames[5] = 'BIRTHDAY';
+                                ftypes[5] = 'birthday';
+                            }(jQuery));
+                            var $mcj = jQuery.noConflict(true);</script>
+                        </ul>
+                        <!--End mc_embed_signup-->
+                    </div>
+                    <div>
+                        <h4 class="text-center">Liked the post? Share it!</h4>
                         <div class="height-15px"></div>
                         <ul class="social">
                             <li class="facebook">
@@ -691,21 +756,22 @@ public class KeyIsNotImmutable {
         site_id: 'konoplev',
     };
 
-    (function(c) {
-        for(var i = 0; i < c.length; i++){
+    (function (c) {
+        for (var i = 0; i < c.length; i++) {
             var d = document, s = d.createElement('script');
-            s.src = remark_config.host + '/web/' +c[i] +'.js';
+            s.src = remark_config.host + '/web/' + c[i] + '.js';
             s.defer = true;
             (d.head || d.body).appendChild(s);
         }
     })(remark_config.components || ['embed']);
+    hljs.highlightAll();
 </script>
 
-<footer id="site-footer">
+    <footer id="site-footer">
     <div class="container">
         <div class="row">
             <div class="col-md-12">
-                <p class="copyright">&copy; 2020 Alexander Konoplev</p>
+                <p class="copyright">&copy; 2022 Alexander Konoplev</p>
             </div>
         </div>
     </div>

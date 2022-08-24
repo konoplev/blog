@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thread racing</title>
+
+    <!-- meta -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- css -->
+    <link rel="stylesheet" href="../../../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../../css/ionicons.min.css">
+    <link rel="stylesheet" href="../../../css/pace.css">
+    <link rel="stylesheet" href="../../../css/custom.css">
+    <link rel="stylesheet" href="../../../css/asciidoc.css">
+    <link rel="stylesheet" href="../../../css/idea.min.css">
+
+    <!-- js -->
+    <script src="../../../js/jquery-2.1.3.min.js"></script>
+    <script src="../../../js/bootstrap.min.js"></script>
+    <script src="../../../js/pace.min.js"></script>
+    <script src="../../../js/modernizr.custom.js"></script>
+    <script src="../../../js/highlight.min.js"></script>
+</head>
+
+<body id="single">
+<div class="container">
+    <div class="container">
+        <header id="site-header">
+    <div class="row">
+        <div class="col-md-4 col-sm-5 col-xs-8">
+            <div class="logo">
+                <h1><a href="../../../index.html"><b>Konoplev's</b> Blog</a></h1>
+            </div>
+        </div><!-- col-md-4 -->
+        <div class="col-md-8 col-sm-7 col-xs-4">
+            <nav class="main-nav" role="navigation">
+                <div class="navbar-header">
+                    <button type="button" id="trigger-overlay" class="navbar-toggle">
+                        <span class="ion-navicon"></span>
+                    </button>
+                </div>
+
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="cl-effect-11"><a href="../../../index.html" data-hover="About">About</a></li>
+                        <li class="cl-effect-11"><a href="../../../en/thoughts/index/1.html" data-hover="Thoughts">Thoughts</a></li>
+                        <li class="cl-effect-11"><a href="../../../en/programming/index/1.html" data-hover="Programming">Programming</a></li>
+                    </ul>
+                </div><!-- /.navbar-collapse -->
+            </nav>
+            <div id="header-search-box">
+                <a id="search-menu" href="#"><span id="language-icon" class="ion-android-globe"></span></a>
+                <div id="language-form" class="language-form">
+                    <div id="searchform">
+                                                
+                        <div class="text-center"><a href="../../../ru/programming/index/1.html" data-hover="About">По-русски</a><div>
+                            <button type="submit"><span class="ion-android-globe"></span></button>
+                        </div>
+                        </div>
+                    </div>
+                </div><!-- col-md-8 -->
+            </div>
+</header>    </div>
+</div>
+
+<div class="content-body">
+    <div class="container">
+        <div class="row">
+            <main class="col-md-12">
+                <article class="post post-1">
+                    <header class="entry-header">
+                        <h1 class="entry-title">Thread racing</h1>
+                        <div class="entry-meta">
+                            <span class="post-date"><a href="#"><time class="entry-date"
+                                                                      datetime="2022-08-20T22:00:00Z">Aug 21, 2022</time></a></span>
+
+                            <span class="post-category">
+                                                                    <a href="../tag/concurrency/1.html"> #concurrency</a>
+                                                            </span>
+
+                                                    </div>
+                        <figure class="img-responsive-center">
+                            <img class="img-responsive" src="./thread_racing.png"
+                                 alt="Developer Image"/>
+                        </figure>
+                    </header>
+                    <div class="entry-content clearfix">
+                                                <div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>We discussed how to start and stop threads in the previous post. This one is about making threads run collaboratively instead of impeding each other.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_theory">Theory</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_synchronization">Synchronization</h3>
+<div class="paragraph">
+<p><a href="https://github.com/konoplev/thread#threads-synchronization">As we discussed previously</a>, sometimes threads need to synchronize. It&#8217;s required because the threads are executed by the scheduler, and we can&#8217;t control the order of execution. Sometimes the order is important. There are two cases when we need to synchronize:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Multiple threads read and update shared data. Without synchronization, it can become inconsistent.</p>
+</li>
+<li>
+<p>A thread needs to wait for another thread to finish its work.</p>
+</li>
+</ol>
+</div>
+<div class="sect3">
+<h4 id="_races">Races</h4>
+<div class="paragraph">
+<p>Each thread has its own memory. Everything created within the thread&#8217;s lambda is local to the thread and not visible to any other thread. But any thread launching a new thread can pass its local variables to the new thread. This is how the variables can be shared between threads.</p>
+</div>
+<div class="paragraph">
+<p>Imagine that there is a main thread that has a counter set to zero. The main thread creates two threads (A and B) and passes the counter to them to be incremented. Thread A starts and reads the counter. It&#8217;s zero. Then thread B starts and also reads the counter. It&#8217;s zero. Then thread A increments the counter. It&#8217;s one. Then thread B increments the counter. It&#8217;s also one. Thread A writes the value to the counter in the main thread and thread B writes the value to the same variable. The counter is one but has to be two. This is a race condition called "lost update". And this is a good example of why it&#8217;s important to protect shared data. Thread B should wait until thread A is done with the update and only after that it should read the counter.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_linearizability">Linearizability</h4>
+<div class="paragraph">
+<p>What do we expect from concurrent code? It should be executed in the same way as it would be executed in sequential order. Either actor A increments the counter and then actor B increments the counter or actor B increments the counter and then actor A increments the counter. In any case, the counter should be two at the end of the operations. It can&#8217;t be one.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_atomicity">Atomicity</h4>
+<div class="paragraph">
+<p>What is the problem with the counter? The problem is that there are 3 operations: read the counter from the shared memory to the thread&#8217;s local memory, increment it in the local memory and write the new value back to the shared memory. And since there could be a switch from thread A to thread B between reading and writing, another thread could read the old value.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">  private static class Counter {
+
+    private int count = 0;
+
+    public int getCount() {
+      return count;
+    }
+
+    public void increment() {
+      count++;
+      //long version:
+      // int localCount = count;
+      // localCount = localCount + 1;
+      // count = localCount;
+
+    }
+
+  }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To reproduce the problem we can use <a href="https://github.com/Kotlin/kotlinx-lincheck">kotlinx-lincheck</a> library. The library receives methods marked with <code>@Operation</code> to generate multiple scenarios of concurrent executions of the operations. And then it checks each execution for linearizability. Can the result produced by threads executing the operations in parallel be produced by a single thread executing operations in some sequential order? If there is no such order, the test fails. We can&#8217;t call the increment twice and get 1 as a result of executing things sequentially but we have this result executing them in parallel. So the <a href="https://github.com/konoplev/mutex/blob/master/src/test/java/locks/LostUpdateIntCounterTest.java">LostUpdateIntCounterTest</a> fails and prints the failed scenario to output.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_mutex">Mutex</h3>
+<div class="paragraph">
+<p>What&#8217;s the solution? The solution is to read, increment, and write as one operation or atomically. In our case, there are threads A and B that are about to perform the atomic operation called "atomic increment" (which consists of 3 steps: read, increment, write). Atomicity means that if thread A already started the operation then thread B should wait until thread A is done with all 3 steps.</p>
+</div>
+<div class="paragraph">
+<p>The mechanism allowing the implementation of atomic operations is called <strong>mut</strong>ual <strong>ex</strong>clusion or mutex. What is mutex? Imagine a rostrum and a forum. Anyone from the forum&#8217;s audience could potentially speak but to make things organized, only one who is on the rostrum is allowed to speak and no one can interrupt the speaker. When the speaker is done she can release the rostrum to let someone else speak. Each person is a thread and the rostrum is a mutex in our example.</p>
+</div>
+<div class="paragraph">
+<p>To make a set of steps atomic, we need to add mutex acquisition before the set and mutex release after the set. This is how the mutex protects the set of operations from parallel execution (i.e. interruptions).</p>
+</div>
+<div class="paragraph">
+<p>So, to fix our counter:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">  private static class Counter {
+
+    private int count = 0;
+    private Lock lock = new ReentrantLock();
+
+    public int getCount() {
+      return count;
+    }
+
+    public void increment() {
+      lock.lock();
+      try {
+        //count++;
+        int localCount = count;
+        localCount = localCount + 1;
+        count = localCount;
+      } finally {
+        lock.unlock();
+      }
+
+    }
+
+  }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The lock is a mutex protecting the counter increment from concurrent execution. If multiple threads are executing the <code>Counter.increment()</code> only one of them will be able to proceed <code>lock.lock()</code>. All other threads are blocked on it until the thread acquired the lock called <code>lock.unlock()</code>. The <code>ReentrantLock</code> is a lock that allows a thread to not block itself by calling the <code>lock()</code> method multiple times (for example if the thread calls <code>lock.lock()</code> and then calls a method that also has <code>lock.lock()</code>). It&#8217;s a good practice to have <code>lock.unlock()</code> in the "finally" section to guarantee to unlock.</p>
+</div>
+<div class="paragraph">
+<p>This is a test demonstrating the lock.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    ReentrantLock lock = new ReentrantLock();
+    AtomicBoolean protectedSectionReached = new AtomicBoolean(false);
+
+    Thread child = new Thread(() -&gt; {
+      lock.lock();
+      protectedSectionReached.set(true);
+    });
+
+    //lock is acquired by the main thread
+    lock.lock();
+    child.start();
+    run100Ms();
+
+    assertThat(protectedSectionReached.get(), is(false));
+    assertThat(child.getState(), is(WAITING));
+
+    lock.unlock();
+    run100Ms();
+    assertThat(protectedSectionReached.get(), is(true));
+    assertThat(child.getState(), is(TERMINATED));</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Since the lock is acquired by the main thread, the child thread is blocked on it. The child thread is waiting for the lock to be released.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+We use our <a href="https://github.com/konoplev/thread/blob/master/src/main/java/util/CpuIntensiveAlgorithm.java">CPU intensive algorithm</a> from the previous post to delay things for 100 ms sometimes to make sure that parallel thread had enough time to execute things.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>It&#8217;s worth mentioning that there are AtomicInteger, AtomicLong, and other atomic versions of the primitive types. So, there is no reason to implement our own atomic counter. But please note, that the atomic class itself doesn&#8217;t guarantee atomicity, it just provides atomic operations. The following increment is not atomic:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">  private static class Counter {
+
+    private AtomicInteger count = new AtomicInteger(0);
+
+    public int getCount() {
+      return count.get();
+    }
+
+    public void increment() {
+      // wrong implementation
+      count.set(count.get() + 1);
+    }
+  }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should use <code>AtomicInteger.incrementAndGet()</code> or <code>AtomicInteger.getAndIncrement()</code> (we don&#8217;t need the result immediately, so it doesn&#8217;t matter which method to call) instead, which are the atomic increment methods.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_blocked_thread">Blocked Thread</h3>
+<div class="paragraph">
+<p>There is another way to create a mutex in Java. It&#8217;s a <code>synchronized</code> word that can be used on a method or a block level. A thread that is blocked on this mutex is in a <code>BLOCKED</code> state. The problem with this approach is that a thread waiting in the <code>BLOCKED</code> state is not able to handle an interruption. See the example below:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    final Object lock = new Object();
+    Thread thread = new Thread(() -&gt; {
+      synchronized(lock){
+        //do something here
+      }
+    });
+    synchronized (lock){
+      thread.start();
+      thread.join(100);
+      assertThat(thread.getState(), is(State.BLOCKED));
+      thread.interrupt();
+      thread.join(100);
+      assertThat(thread.getState(), is(State.BLOCKED));
+    }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>We discussed in <a href="https://github.com/konoplev/thread#how-to-stop-a-thread">the previous blog post</a> that it&#8217;s very important to be interruptable. The big advantage of the ReeentrantLock is that there is an interruptable version of the lock() method (called <code>ReentrantLock.lockInterruptibly()</code>). See <code>TestThreadInBlockedState.testInterruptWaitingThread()</code> for an example.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_dirty_read">Dirty read</h3>
+<div class="paragraph">
+<p>Is it enough to have the update operation atomic to protect the variable shared among threads? In our case, there is only one variable and the answer is yes. You can check it by adding the lock to the <code>increment</code> method and restarting the test. If there is only one field and the update is atomic then the read is also atomic.</p>
+</div>
+<div class="paragraph">
+<p>But that doesn&#8217;t work in case we have multiple fields (for example, numerical and string representation of the counter).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">  private static class StringAndNumber {
+
+    private int number = 0;
+    private String string = "0";
+    private Lock lock = new ReentrantLock();
+
+    public int getNumber() {
+      return number;
+    }
+
+    private String getString() {
+      return string;
+    }
+
+    public void increment() {
+      lock.lock();
+      try {
+        number++;
+        string = String.valueOf(number);
+      } finally {
+        lock.unlock();
+      }
+    }
+  }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The atomicity of the update operation is not enough to protect the read. If you run the <code>DirtyReadTest</code> you will see the failed scenario.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Parallel part:
+| getNumber(): 1 | increment(): void |
+| getString(): 0 |                   |</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>While one thread is incrementing, another thread is reading. The reader could get the first field updated but the second field is still having the old value. The operation is atomic from the writing threads perspective, but it&#8217;s not from the reading threads point of view. We can easily fix it by adding the lock to read methods as well. And this is actually how we can prevent any inconsistency - just make <strong>all</strong> methods interacting with the shared state available to only one thread at a time. But that&#8217;s not probably what we want. Our initial intent is to have threads running in parallel, so we can utilize resources more efficiently. But if each method is exclusive and blocks all threads except one that acquired the lock then the execution is sequential. We lost any parallelism.</p>
+</div>
+<div class="paragraph">
+<p>Imagine that we have only one thread incrementing the counter and 1000 threads reading it. All threads have to wait for the lock to be released by the updating thread. That&#8217;s fine. That makes both fields consistent for the readers. But since both read methods (<code>getNumber</code> and <code>getString</code>) are blocking now, each reader should wait for another reader. Parallel reads are not allowed anymore, despite the fact the reading threads can&#8217;t impact each other.</p>
+</div>
+<div class="paragraph">
+<p>The better solution is to block readers while there is an update in progress, but as soon as the update is done, it&#8217;s safe to read in parallel. So, we need two locks: one for the update operation and one for the read operation. The locks are depends on each other. The read lock is not exclusive. Multiple threads can acquire it. So, reading threads don&#8217;t need to wait for each other. But if the write lock is acquired then the read lock is not allowed to be acquired, it should wait until the write lock is released. This is how we make all readers wait until the increment is done. Also, the write lock can&#8217;t be acquired until all read locks are released. So the update is waiting for all readers to finish (otherwise they could read an inconsistent update). Does it mean that readers could potentially block the writer forever? Nope, the write lock is waiting only for readers that have started before the write attempt. All reading threads that tried to acquire the read lock after the write lock acquisition attempt are waiting for the write lock to be acquired (as soon as all in-progress readers are done) and released (after the write is done). This is how the update is consistent but readers don&#8217;t block each other. So the final version of the fix is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">  private static class StringAndNumber {
+    ReadWriteLock lock = new ReentrantReadWriteLock();
+    private int number = 0;
+    private String string = "0";
+    public int getNumber() {
+      lock.readLock().lock();
+      try {
+        return number;
+      } finally {
+        lock.readLock().unlock();
+      }
+    }
+
+    private String getSting() {
+      lock.readLock().lock();
+      try {
+        return string;
+      } finally {
+        lock.readLock().unlock();
+      }
+    }
+
+    synchronized public void increment() {
+      lock.writeLock().lock();
+      try {
+        number++;
+        string = String.valueOf(number);
+      } finally {
+        lock.writeLock().unlock();
+      }
+    }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>DirtyReadFixTest</code> proves that the fix is correct. If you are curious to see how read-write locks work, please check the <code>ReadWriteLockTest</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_deadlock">Deadlock</h3>
+<div class="paragraph">
+<p>You should be careful when there is more than one lock involved in the thread&#8217;s synchronization. A deadlock is a situation when two or more threads are waiting for each other to release the lock. Here is an example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    Lock lockA = new ReentrantLock();
+    Lock lockB = new ReentrantLock();
+    AtomicBoolean protectedSectionReachedByThreadA = new AtomicBoolean(false);
+    Thread threadA = new Thread(() -&gt; {
+      lockA.lock();
+      try {
+        run100Ms();
+        lockB.lock();
+        try {
+          protectedSectionReachedByThreadA.compareAndSet(false, true);
+        } finally {
+          lockB.unlock();
+        }
+      } finally {
+        lockA.unlock();
+      }
+    });
+
+    AtomicBoolean protectedSectionReachedByThreadB = new AtomicBoolean(false);
+    Thread threadB = new Thread(() -&gt; {
+      lockB.lock();
+      try {
+        run100Ms();
+        lockA.lock();
+        try {
+          protectedSectionReachedByThreadB.compareAndSet(false, true);
+        } finally {
+          lockA.unlock();
+        }
+      } finally {
+        lockB.unlock();
+      }
+    });
+
+    threadA.start();
+    threadB.start();
+    threadA.join(200);
+    threadB.join(200);
+    assertThat(protectedSectionReachedByThreadA.get(), is(false));
+    assertThat(protectedSectionReachedByThreadB.get(), is(false));
+    assertThat(threadA.getState(), is(WAITING));
+    assertThat(threadB.getState(), is(WAITING));</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Thread A acquires the lockA and waits for the lockB to be released. Thread B acquires the lockB and waits for the lockA to be released. Both threads are waiting for each other forever.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_waiting_and_notifying">Waiting and notifying</h3>
+<div class="paragraph">
+<p>So far we have seen how to synchronize threads to keep shared data consistent. But what if one thread needs to sync its work (not data) with another thread? For example, some thread can&#8217;t proceed until another thread is finished its work. To implement it the threads need to be able to send messages to each other.</p>
+</div>
+<div class="paragraph">
+<p>One of the ways to have a thread waiting for another thread to finish is to use <code>Condition</code>. The condition is created from a lock and the lock should be acquired before using the condition. Let&#8217;s see how it works. Below we create a thread that is waiting for a signal from the main thread. It acquires the lock and waits for the signal on the condition. As soon as the <code>await()</code> method is called the thread releases the lock and starts waiting. So, the main thread can acquire the lock and send the signal. That&#8217;s not enough for the waiting thread to receive the signal, it should be able to acquire the lock to go ahead, so the main thread should release the lock after the signal is sent. Then the waiting thread continues executing from the <code>await()</code> method.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    ReentrantLock lock = new ReentrantLock();
+    Condition condition = lock.newCondition();
+    AtomicBoolean awaitReached = new AtomicBoolean(false);
+    AtomicBoolean threadIsAwaken = new AtomicBoolean(false);
+    Thread thread = new Thread(() -&gt; {
+      lock.lock();
+      try {
+        awaitReached.compareAndSet(false, true);
+        condition.await();
+        threadIsAwaken.compareAndSet(false, true);
+      } catch (InterruptedException e) {
+        //ignore in this test
+      } finally {
+        lock.unlock();
+      }
+    });
+    thread.start();
+    run100Ms();
+
+    assertThat(awaitReached.get(), is(true));
+    assertThat(threadIsAwaken.get(), is(false));
+
+    // to use condition we need to acquire the lock
+    // otherwise IllegalMonitorStateException is thrown
+    assertThrows(IllegalMonitorStateException.class, condition::signalAll);
+
+    //the thread is waiting for the condition
+    //and it releases the lock
+    assertThat(lock.tryLock(), is(true));
+
+    // now awake the thread
+    condition.signalAll();
+
+    // let's delay a bit to let the thread handle the signal if it's received
+    run100Ms();
+
+    // no, the thread is still awaiting the condition because it can't acquire the lock
+    assertThat(threadIsAwaken.get(), is(false));
+    assertThat(thread.getState(), is(WAITING));
+
+    // now we release the lock
+    lock.unlock();
+
+    // let's delay a bit to make sure that the thread has enough time to receive the signal
+    run100Ms();
+
+    //now the thread is awakened
+    assertThat(threadIsAwaken.get(), is(true));
+    assertThat(thread.getState(), is(TERMINATED));</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>An important outcome from the above example:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>To wait for the condition, we need to acquire the lock.</p>
+</li>
+<li>
+<p>To signal the condition, we need to acquire the lock.</p>
+</li>
+<li>
+<p>After the signal is sent/received, we need to release the lock to let another thread proceed.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This is how the condition is protected from concurrent execution and lets threads communicate with each other.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Please note, that to be able to receive the signal, the thread must be waiting on <code>await()</code> method, not on the <code>lock.lock()</code>. If the thread is blocked on the lock acquisition, it can&#8217;t receive the signal. See <code>TestReentrantLock.signalIsNotReceivedIfThreadBlockedOnLockAcquisitionNotOnAwait</code> for details.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_practice">Practice</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Having all the above knowledge, we can implement a thing that will be very useful soon. The thing can be used to split the execution of multiple threads into sequential phases. Each phase is executed by some thread and while the phase is executing other threads are waiting. Then the next phase is started and so on. The <code>PhaseSync</code> can be useful to reproduce different race conditions. That&#8217;s the next topic I&#8217;ll cover in the next post.</p>
+</div>
+<div class="sect2">
+<h3 id="_usage">Usage</h3>
+<div class="paragraph">
+<p>The PhaseSync class has the following public methods:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">public void phase(Phases phase, FallibleFunction execution);
+public void phaseWithExpectedException(Phases phase, FallibleFunction execution, Class&lt;? extends Exception&gt; expectedException);
+public boolean noExceptions();
+public String exceptionDetails();
+public void ifAnyExceptionRethrow();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>phase()</code> method is used to execute the given function in the given phase. The <code>phaseWithExpectedException()</code> method is the same as the <code>phase()</code> but it also expects an exception to be thrown (we&#8217;ll talk about it a bit later).</p>
+</div>
+<div class="paragraph">
+<p>This is an example of how the PhaseSync is used:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    PhaseSync phaseSync = new PhaseSync();
+
+    final AtomicReference&lt;String&gt; stages = new AtomicReference&lt;&gt;("");
+    BinaryOperator&lt;String&gt; append = (a, b) -&gt; a + b;
+    runAsync(() -&gt; {
+      phaseSync.phase(Phases.SECOND, () -&gt; stages.getAndAccumulate("2", append));
+      phaseSync.phase(Phases.FOURTH, () -&gt; stages.getAndAccumulate("4", append));
+    });
+    runAsync(() -&gt; {
+      phaseSync.phase(Phases.FIRST, () -&gt; stages.getAndAccumulate("1", append));
+      phaseSync.phase(Phases.THIRD, () -&gt; stages.getAndAccumulate("3", append));
+    });
+    phaseSync.phase(Phases.FIFTH, () -&gt; {});
+    assertEquals("1234", stages.get());</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>We create two threads that execute 4 phases. Each phase just adds the phase number to the stages string. The phases are executed in the order specified by the first parameter&#8217;s value. The last fifth phase is to wait for all phases to be executed in the main thread.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The CompletableFuture.runAsync() method is just a convenient way to execute a code in a parallel thread. Under the hood, it uses the ForkJoinPool.commonPool() to execute the code. The <code>commonPool()</code> is a preconfigured thread pool. We discussed thread pools in <a href="https://github.com/konoplev/thread#thread-reusing">the previous post</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The FallibleFunction (second argument of the phase* methods) is a function that can throw an exception.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">@FunctionalInterface
+  public interface FallibleFunction {
+    void run() throws Exception;
+  }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The exception is not propagated to the caller of the function. Instead, the exception is stored in the PhaseSync object. The object allows to check if there any exceptions were thrown by calling <code>noExceptions()</code> and the details info about the exception can be provided by <code>exceptionDetails()</code> method.</p>
+</div>
+<div class="paragraph">
+<p>So, we can call any methods throwing checked exceptions without worrying about the catch clauses. For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">phaseSync.phase(Phases.FIRST, () -&gt; Thread.sleep(1));</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>phase*</code> are supposed to be used in async functions (lambda expression). Java doesn&#8217;t allow throwing checked exceptions from async functions. The PhaseSync class is designed to split execution and exception handling.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    PhaseSync phaseSync = new PhaseSync();
+
+    runAsync(() -&gt; phaseSync.phase(Phases.FIRST, () -&gt; Files.readAllLines(Paths.get("/notExistingFile"))));
+
+    phaseSync.phase(Phases.SECOND, () -&gt; assertThrows(IOException.class, phaseSync::ifAnyExceptionRethrow));
+
+    phaseSync.phase(Phases.THIRD, () -&gt; Files.readAllLines(Paths.get("/dev/null")));
+
+    runAsync(() -&gt; phaseSync.phase(Phases.FOURTH, () -&gt; assertDoesNotThrow(phaseSync::ifAnyExceptionRethrow)));
+
+    phaseSync.phase(Phases.FIFTH, () -&gt; {});</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>We run the file reading in a separate thread, and then, when it&#8217;s convenient, we can pass the exception to a corresponding handler. It could be handled in a completely different thread. So, not only execution is split into phases, but error handling is split into phases too. We have full control over the execution and can reproduce any scenario we want. It will be very useful in the next post where we&#8217;re talking about dirty, non-repeatable, and phantom reads in the context of relational databases.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_implementation">Implementation</h3>
+<div class="paragraph">
+<p>Now, when we know how the class is used, let&#8217;s take a look at how it is implemented.</p>
+</div>
+<div class="paragraph">
+<p>We need <code>phaseSync.phase*()</code> methods to wait for each other and execute in the order specified by the first parameter&#8217;s value. How would you implement it? It&#8217;s worth thinking about it because there are multiple ways. You can even try to implement it as an exercise.</p>
+</div>
+<div class="paragraph">
+<p>In my implementation, I use a condition variable and a lock. The condition variable protected by the lock is used to signal the threads that the phase owned by the lock is finished. Each phase is waiting for the condition and checks if its number is the next phase&#8217;s number. If it is, the phase is executed and the condition is signaled to pass the execution to the next phase. If it&#8217;s not, it is just back to waiting.</p>
+</div>
+<div class="paragraph">
+<p>It works in the same way as virtual queues created by a <a href="https://en.wikipedia.org/wiki/Queue_management_system">queue management system</a>. You come to a room where some service is provided. There is a machine printing physical tickets and a screen showing numbers. To be queued you need to get a ticket with some number printed for you. Then you just need to wait until your number is displayed on the screen, which means that now is your turn, and you can be served. Each time the screen is changed you check if it has your number. If it&#8217;s not, you continue waiting.</p>
+</div>
+<div class="paragraph">
+<p>So, here is the implementation:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">public class PhaseSync {
+
+  private final Lock lock = new ReentrantLock();
+  private final Condition phaseIsDone = lock.newCondition();
+  private Phases currentPhase = Phases.FIRST;
+
+  // some code omitted
+  private void phase(Phases phase, FallibleFunction execution, Consumer&lt;Exception&gt; exceptionHandler) {
+    lock.lock();
+    try {
+      while (currentPhase != phase) {
+        if (!phaseIsDone.await(5, TimeUnit.SECONDS)) {
+          exceptionHandler.accept(new Exception("Timeout waiting for " + phase));
+          return;
+        }
+      }
+      executeAndHandleExceptions(execution, exceptionHandler);
+
+      if (currentPhase.hasNext()) {
+        currentPhase = currentPhase.next();
+      }
+      phaseIsDone.signalAll();
+    } catch (InterruptedException e) {
+      throw new RuntimeException("Thread interrupted");
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  public enum Phases {
+    FIRST,
+    SECOND,
+    THIRD,
+    FOURTH,
+    FIFTH,
+    SIXTH,
+    SEVENTH,
+    EIGHTH,
+    NINTH,
+    TENTH;
+
+    public boolean hasNext() {
+      return next() != null;
+    }
+
+    public Phases next() {
+      return Phases.values()[ordinal() + 1];
+    }
+  }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The remaining code is about exception handling, you can take a look at it if you are curious. The code can be found <a href="https://github.com/konoplev/mutex/tree/master/src/main/java/phases">here</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_conclusion">Conclusion</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this post, we discussed how to protect shared resources from concurrent access, and how threads can communicate to organize collaborative execution. We applied that knowledge to implement the PhaseSync class allowing us to split execution into several phases to demonstrate concurrent issues. We&#8217;re going to use PhaseSync to talk about atomicity and isolation in the context of relational databases. See you soon!</p>
+</div>
+</div>
+</div>
+                    </div>
+                    <div class="height-40px"></div>
+                    <div>
+                        <h4 class="text-center">Receive new posts to your email</h4>
+                        <div class="height-15px"></div>
+                        <ul class="social">
+                            <!-- Begin Mailchimp Signup Form -->
+                            <div id="mc_embed_signup">
+                                <form
+                                        action="https://konoplev.us9.list-manage.com/subscribe/post?u=c44fad85d7459fe096d5bf7f2&amp;id=73cb044c01"
+                                        method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form"
+                                        class="validate contact-form" target="_blank" novalidate>
+                                    <div id="mc_embed_signup_scroll">
+                                        <ul>
+                                            <li>
+                                                <div>
+                                                    <input type="email" placeholder="your email" value="" name="EMAIL" class="required email"
+                                                           id="mce-EMAIL">
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div id="mce-responses" class="clear foot">
+                                                    <div class="response" id="mce-error-response" style="display:none">
+                                                    </div>
+                                                    <div class="response" id="mce-success-response"
+                                                         style="display:none"></div>
+                                                </div>
+                                                <!-- real people should not fill this in and expect good things - do not remove this or risk form bot signups-->
+                                                <div style="position: absolute; left: -5000px;" aria-hidden="true">
+                                                    <input type="text" name="b_c44fad85d7459fe096d5bf7f2_73cb044c01"
+                                                           tabindex="-1" value=""></div>
+                                                <div class="optionalParent">
+                                                    <div class="clear foot">
+                                                        <input type="submit" value="Subscribe" name="subscribe"
+                                                               id="mc-embedded-subscribe"
+                                                               class="btn-send btn-5 btn-5b">
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </form>
+                            </div>
+                            <script type='text/javascript'
+                                    src='//s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js'></script>
+                            <script type='text/javascript'>(function ($) {
+                                window.fnames = new Array();
+                                window.ftypes = new Array();
+                                fnames[0] = 'EMAIL';
+                                ftypes[0] = 'email';
+                                fnames[1] = 'FNAME';
+                                ftypes[1] = 'text';
+                                fnames[2] = 'LNAME';
+                                ftypes[2] = 'text';
+                                fnames[3] = 'ADDRESS';
+                                ftypes[3] = 'address';
+                                fnames[4] = 'PHONE';
+                                ftypes[4] = 'phone';
+                                fnames[5] = 'BIRTHDAY';
+                                ftypes[5] = 'birthday';
+                            }(jQuery));
+                            var $mcj = jQuery.noConflict(true);</script>
+                        </ul>
+                        <!--End mc_embed_signup-->
+                    </div>
+                    <div>
+                        <h4 class="text-center">Liked the post? Share it!</h4>
+                        <div class="height-15px"></div>
+                        <ul class="social">
+                            <li class="facebook">
+                                <a href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Fkonoplev.me&t="
+                                   target="_blank" title="Share on Facebook"
+                                   onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(document.URL)); return false;">
+                	<span class="ion-social-facebook">
+                                </a>
+                            </li>
+                            <li class="twitter">
+                                <a href="https://twitter.com/intent/tweet?source=http%3A%2F%2Fkonoplev.me&text=:%20http%3A%2F%2Fkonoplev.me"
+                                   target="_blank" title="Tweet"
+                                   onclick="window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(document.title) + ':%20' + encodeURIComponent(document.URL)); return false;">
+                	<span class="ion-social-twitter">
+                                </a>
+                            </li>
+                            <li class="pinterest">
+                                <a href="http://pinterest.com/pin/create/button/?url=http%3A%2F%2Fkonoplev.me&description="
+                                   target="_blank" title="Pin it"
+                                   onclick="window.open('http://pinterest.com/pin/create/button/?url=' + encodeURIComponent(document.URL) + '&description=' +  encodeURIComponent(document.title)); return false;">
+                	<span class="ion-social-pinterest">
+                                </a>
+                            </li>
+                            <li class="reddit">
+                                <a href="http://www.reddit.com/submit?url=http%3A%2F%2Fkonoplev.me&title="
+                                   target="_blank" title="Submit to Reddit"
+                                   onclick="window.open('http://www.reddit.com/submit?url=' + encodeURIComponent(document.URL) + '&title=' +  encodeURIComponent(document.title)); return false;">
+                	<span class="ion-social-reddit">
+                                </a>
+                            </li>
+                            <li class="linkedin">
+                                <a href="http://www.linkedin.com/shareArticle?mini=true&url=http%3A%2F%2Fkonoplev.me&title=&summary=&source=http%3A%2F%2Fkonoplev.me"
+                                   target="_blank" title="Share on LinkedIn"
+                                   onclick="window.open('http://www.linkedin.com/shareArticle?mini=true&url=' + encodeURIComponent(document.URL) + '&title=' +  encodeURIComponent(document.title)); return false;">
+                	<span class="ion-social-linkedin">
+                                </a>
+                            </li>
+                            <li class="email-icon">
+                                <a href="mailto:?subject=&body=:%20http%3A%2F%2Fkonoplev.me"
+                                   target="_blank" title="Email"
+                                   onclick="window.open('mailto:?subject=' + encodeURIComponent(document.title) + '&body=' +  encodeURIComponent(document.URL)); return false;">
+                	<span class="ion-email">
+                                </a>
+                            </li>
+                        </ul>
+
+                    </div>
+                    <div>
+                        <div id="remark42" aria-live="polite">
+                            <noscript>Please enable JavaScript to view the comments</noscript>
+                        </div>
+                    </div>
+                </article>
+
+            </main>
+        </div>
+    </div>
+</div>
+
+<script>
+    var remark_config = {
+        host: "https://comments.konoplev.me",
+        site_id: 'konoplev',
+    };
+
+    (function (c) {
+        for (var i = 0; i < c.length; i++) {
+            var d = document, s = d.createElement('script');
+            s.src = remark_config.host + '/web/' + c[i] + '.js';
+            s.defer = true;
+            (d.head || d.body).appendChild(s);
+        }
+    })(remark_config.components || ['embed']);
+    hljs.highlightAll();
+</script>
+
+    <footer id="site-footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <p class="copyright">&copy; 2022 Alexander Konoplev</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Mobile Menu -->
+<div class="overlay overlay-hugeinc">
+    <button type="button" class="overlay-close"><span class="ion-ios-close-empty"></span></button>
+    <nav>
+        <ul>
+            <li><a href="../../../index.html">About</a></li>
+            <li><a href="../../../en/thoughts/index/1.html">Thoughts</a></li>
+            <li><a href="../../../en/programming/index/1.html">Programming</a></li>
+        </ul>
+    </nav>
+</div>
+
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript" >
+  (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+  (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+  ym(55474030, "init", {
+    clickmap:true,
+    trackLinks:true,
+    accurateTrackBounce:true,
+    webvisor:true
+  });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/55474030" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+
+
+<!-- /Yandex.Metrika counter -->
+
+<script src="../../../js/script.js"></script>
+
+</body>
+</html>

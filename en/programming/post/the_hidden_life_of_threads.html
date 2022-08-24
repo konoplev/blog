@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>The hidden life of threads</title>
+
+    <!-- meta -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- css -->
+    <link rel="stylesheet" href="../../../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../../css/ionicons.min.css">
+    <link rel="stylesheet" href="../../../css/pace.css">
+    <link rel="stylesheet" href="../../../css/custom.css">
+    <link rel="stylesheet" href="../../../css/asciidoc.css">
+    <link rel="stylesheet" href="../../../css/idea.min.css">
+
+    <!-- js -->
+    <script src="../../../js/jquery-2.1.3.min.js"></script>
+    <script src="../../../js/bootstrap.min.js"></script>
+    <script src="../../../js/pace.min.js"></script>
+    <script src="../../../js/modernizr.custom.js"></script>
+    <script src="../../../js/highlight.min.js"></script>
+</head>
+
+<body id="single">
+<div class="container">
+    <div class="container">
+        <header id="site-header">
+    <div class="row">
+        <div class="col-md-4 col-sm-5 col-xs-8">
+            <div class="logo">
+                <h1><a href="../../../index.html"><b>Konoplev's</b> Blog</a></h1>
+            </div>
+        </div><!-- col-md-4 -->
+        <div class="col-md-8 col-sm-7 col-xs-4">
+            <nav class="main-nav" role="navigation">
+                <div class="navbar-header">
+                    <button type="button" id="trigger-overlay" class="navbar-toggle">
+                        <span class="ion-navicon"></span>
+                    </button>
+                </div>
+
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="cl-effect-11"><a href="../../../index.html" data-hover="About">About</a></li>
+                        <li class="cl-effect-11"><a href="../../../en/thoughts/index/1.html" data-hover="Thoughts">Thoughts</a></li>
+                        <li class="cl-effect-11"><a href="../../../en/programming/index/1.html" data-hover="Programming">Programming</a></li>
+                    </ul>
+                </div><!-- /.navbar-collapse -->
+            </nav>
+            <div id="header-search-box">
+                <a id="search-menu" href="#"><span id="language-icon" class="ion-android-globe"></span></a>
+                <div id="language-form" class="language-form">
+                    <div id="searchform">
+                                                
+                        <div class="text-center"><a href="../../../ru/programming/index/1.html" data-hover="About">По-русски</a><div>
+                            <button type="submit"><span class="ion-android-globe"></span></button>
+                        </div>
+                        </div>
+                    </div>
+                </div><!-- col-md-8 -->
+            </div>
+</header>    </div>
+</div>
+
+<div class="content-body">
+    <div class="container">
+        <div class="row">
+            <main class="col-md-12">
+                <article class="post post-1">
+                    <header class="entry-header">
+                        <h1 class="entry-title">The hidden life of threads</h1>
+                        <div class="entry-meta">
+                            <span class="post-date"><a href="#"><time class="entry-date"
+                                                                      datetime="2022-08-13T22:00:00Z">Aug 14, 2022</time></a></span>
+
+                            <span class="post-category">
+                                                                    <a href="../tag/concurrency/1.html"> #concurrency</a>
+                                                            </span>
+
+                                                    </div>
+                        <figure class="img-responsive-center">
+                            <img class="img-responsive" src="./the_hidden_life_of_threads.png"
+                                 alt="Developer Image"/>
+                        </figure>
+                    </header>
+                    <div class="entry-content clearfix">
+                                                <div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Many developers know how to start a thread. But what happens next? How to properly stop a thread? What if the thread is blocked? What if the thread started another thread is done, would the child thread be also terminated? When and how to use and re-use threads? Read this post to find answers.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_theory">Theory</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you know what thread is and what is the difference between parallel and concurrent execution, jump into <a href="#_practical">Practical</a>.</p>
+</div>
+<div class="sect2">
+<h3 id="_why_threads">Why threads?</h3>
+<div class="sect3">
+<h4 id="_problem">Problem</h4>
+<div class="paragraph">
+<p>Many years ago computers were big and expensive (<a href="https://en.wikipedia.org/wiki/IBM_7090">IBM 7094 costed $18 million</a> for example). If some program&#8217;s waiting for data from the slow input device to start processing it, the very expensive CPU simply sits idle.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_solution">Solution</h4>
+<div class="paragraph">
+<p>To utilize CPU better new Operating Systems and hardware allowing to have multiple programs in memory were developed. So while one program is waiting on IO, another one having enough data could use CPU. This is how the CPU could be utilized almost 100% of the time.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_preemptive_scheduling">Preemptive scheduling</h4>
+<div class="paragraph">
+<p>What if there are multiple programs ready to use CPU? Which one should run first? OSs have a <a href="https://en.m.wikipedia.org/wiki/Preemption_(computing)">preemtive scheduler</a> giving each program a fair share of CPU and keeping all parts of the system busy. So if there are two programs PR1 and PR2, the scheduler could allow PR1 to use CPU for some time, then put it on hold and let PR2 use CPU, then put PR2 on hold, switch to PR1 one, and so on. If some program is waiting on IO, the scheduler will not give the CPU this program until the IO is done. So, even though there is only one CPU we have programs running simultaneously, or concurrently.</p>
+</div>
+<div class="paragraph">
+<p>A program with its state (allowing to know which instruction should be run next when the scheduler unpauses the program and what resources the program needs) is called a process. A process has one or many execution threads. A thread needs fewer resources than a process, so on a modern OS, it&#8217;s cheaper to create a thread than a process.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_concurrency_vs_parallelism">Concurrency vs parallelism</h4>
+<div class="paragraph">
+<p>Imagine a restraint with a waiter and a chef. The waiter is waiting for the customers to come and serve them. The chef is cooking the food. While the waiter is waiting for the customers, bringing them a menu, and receiving an order, the chef is working on the orders that the waiter already brought. In our analogy, each table is a process, the order is a program to execute, the waiter and customers reading the menu are IO, and the chef is the CPU and the scheduler. While ingredients for a dish ordered by table 1 are cooking in boiled water, the chef could work on another dish ordered by table 2. This is how one chef executes multiple programs at the same time. This is concurrent execution. Processes (tables) can&#8217;t change the order of execution, it&#8217;s up to the chef to decide which program to execute next. There is a limit on orders the chef can execute at the same time. To reduce the amount of time the customers are waiting for the food, a new chef could join the team, so we have two chefs working in parallel. This is parallel execution. Different CPU cores (chefs) can work on the same process (order) to make it faster or on different processes (orders).</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Now the waiter could be a bottleneck. The chefs can execute more orders, but they have to wait for the waiter to bring them and simply sit idle. IO can be parallel as well, but we&#8217;ll take a look at it later in a separate post.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_practical">Practical</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this section, we&#8217;ll see how to create a thread and how to use it. We use Java since this language is well known, and it has a rich set of capabilities for multithreading.</p>
+</div>
+<div class="sect2">
+<h3 id="_how_to_create_and_use_a_thread">How to create and use a thread?</h3>
+<div class="paragraph">
+<p>There are multiple ways to execute some piece of code concurrently, but basically, it&#8217;s done by creating a function that is going to be executed concurrently (or in parallel) and passing it to a (new or existing) thread. We will discuss the thread re-using a bit later. For now, let&#8217;s create a thread and see how it works.</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/konoplev/thread/blob/1af062780f7a7e22068b7fc99a0957886b3cc428/src/test/java/thread/CreateThreadTest.java#L16">link to the source code</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    AtomicBoolean changed = new AtomicBoolean(false);
+    Thread thread = new Thread(() -&gt; {
+      // executed concurrently with main thread
+      changed.compareAndSet(false, true);
+    });
+
+    // Before starting the thread, the thread is not running.
+    assertThat(thread.isAlive(), is(false));
+    assertThat(thread.getState(), is(Thread.State.NEW));
+    assertThat(changed.get(), is(false));
+
+    // Start the thread.
+    thread.start();
+    assertThat(thread.isAlive(), is(true));
+    assertThat(thread.getState(), is(Thread.State.RUNNABLE));
+    assertThat(changed.get(), is(false));
+
+    // Wait for the thread to finish.
+    thread.join();
+    assertThat(thread.isAlive(), is(false));
+    assertThat(thread.getState(), is(Thread.State.TERMINATED));
+    assertThat(changed.get(), is(true));</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example, we create a thread and pass it a lambda expression that is going to be executed concurrently with the main thread. The function just changes a boolean value, so we can see in the main thread if it has been executed or not.</p>
+</div>
+<div class="paragraph">
+<p>In the first line, we create an AtomicBoolean variable that will be used to signal the main thread that the created thread has finished. The AtomicBoolean is a special class that allows us to use atomic operations on it. We will talk about atomic operations in later posts.</p>
+</div>
+<div class="paragraph">
+<p>Each thread has multiple states:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>NEW - the thread has been created but not started yet (the start() method has not been called)</p>
+</li>
+<li>
+<p>RUNNABLE - the thread has been started but not yet finished</p>
+</li>
+<li>
+<p>TERMINATED - the thread has finished</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>There are more states, but they are related to synchronization, and we cover them a bit later.</p>
+</div>
+<div class="sect3">
+<h4 id="_how_to_wait_for_a_thread_to_finish">How to wait for a thread to finish?</h4>
+<div class="paragraph">
+<p>The started thread runs in parallel with the main thread. We can wait for the thread to finish by calling the <code>join()</code> method. This method blocks the main thread until the running thread finishes. It&#8217;s a blocking call, so the main thread can&#8217;t continue until the thread finishes. There is an overloaded version of join() that takes a timeout parameter. If the thread doesn&#8217;t finish in the given time, the main thread just continues execution.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_threads_synchronization">Threads synchronization</h4>
+<div class="paragraph">
+<p>So, the join() method is one of the ways to synchronize threads. The other way is to use locks (we discuss it in the next post). So far let&#8217;s see how to use join() and how it changes the executing thread&#8217;s state.</p>
+</div>
+<div class="paragraph">
+<p>To test it we need a long-running function that keeps a thread busy for a while (there are two methods running for 100 milliseconds and for 1 second). We would use <a href="https://github.com/konoplev/thread/blob/master/src/main/java/util/CpuIntensiveAlgorithm.java">some not very efficient algorithm for finding prime numbers</a> to implement it and give a big enough number to occupy the CPU for a desired amount of time.</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/konoplev/thread/blob/1af062780f7a7e22068b7fc99a0957886b3cc428/src/test/java/thread/CreateThreadTest.java#L41">link to the source code</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    Thread thread = new Thread(() -&gt; {
+      // executed concurrently with main thread
+      var child = new Thread(CpuIntensiveAlgorithm::run1s);
+      child.start();
+      try {
+        child.join();
+      } catch (InterruptedException e) {
+        //ignore in test
+      }
+    });
+    thread.start();
+    // let the child thread run for a while
+    thread.join(100);
+    assertThat(thread.getState(), is(Thread.State.WAITING));</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When one thread is waiting for another thread to finish, it changes its state to WAITING. If we change the child.join() call (line 9) to child.join(100), the thread will have TIMED_WAITING state (see <a href="https://xxx">next test method</a>).</p>
+</div>
+<div class="paragraph">
+<p>So, we covered all thread states except for BLOCKED. To discuss this state we need to dive deeper into threads synchronization which we will discuss in the next post.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_thread_sleep">Thread sleep</h4>
+<div class="paragraph">
+<p>One more way to put a thread into a waiting state is to call <code>Thread.sleep()</code> method. This method blocks the thread for the given amount of time. It&#8217;s a bad idea to use this method for threads synchronization because it blocks the thread, so it&#8217;s just occupying resources and doesn&#8217;t do anything, and sometimes this idle time is too long, and sometimes it&#8217;s too short. You never know because you don&#8217;t control the scheduler.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_threads_interdependency">Threads interdependency</h4>
+<div class="paragraph">
+<p>What happens to a child thread if its parent thread terminates? Nothing, the child thread is still running.</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/konoplev/thread/blob/1af062780f7a7e22068b7fc99a0957886b3cc428/src/test/java/thread/CreateThreadTest.java#L76">link to the source code</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    AtomicBoolean calculationIsDone = new AtomicBoolean(false);
+    Thread childThread = new Thread(() -&gt; {
+      CpuIntensiveAlgorithm.run100Ms();
+      calculationIsDone.set(true);
+    });
+    Thread parentThread = new Thread(childThread::start);
+    parentThread.start();
+    parentThread.join(100);
+    assertThat(parentThread.isAlive(), is(false));
+    assertThat(childThread.isAlive(), is(true));
+    childThread.join(200);
+    assertThat(calculationIsDone.get(), is(true));</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_how_to_stop_a_thread">How to stop a thread?</h3>
+<div class="paragraph">
+<p>So, we know how to wait for a thread to finish, but how to force it to be stopped (if it&#8217;s running for too long, for example)?</p>
+</div>
+<div class="paragraph">
+<p>The simple answer is you can&#8217;t force it. Remember? You can&#8217;t control the scheduler. But you can call <code>Thread.interrupt()</code> method. This method interrupts the thread. So, any method that throws an InterruptedException will probably throw this exception, and you can handle the interruption in the catch block.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+I say "probably" because it really depends on implementation. But it&#8217;s a good practice to throw InterruptedException when you receive the interrupt signal.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/konoplev/thread/blob/1af062780f7a7e22068b7fc99a0957886b3cc428/src/test/java/thread/StopThreadTest.java#L19">link to the source code</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    AtomicBoolean exceptionCaught = new AtomicBoolean(false);
+    Thread threadToStop = new Thread(() -&gt; {
+      try {
+        Thread.sleep(Long.MAX_VALUE);
+      } catch (InterruptedException e) {
+        exceptionCaught.compareAndSet(false, true);
+      }
+    });
+    threadToStop.start();
+    threadToStop.interrupt();
+    threadToStop.join(100);
+    assertThat(exceptionCaught.get(), is(true));
+    assertThat(threadToStop.isAlive(), is(false));</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the example, the thread sleeps as long as it can but when it receives the interrupt signal the sleep method throws an InterruptedException.</p>
+</div>
+<div class="sect3">
+<h4 id="_interrupting_a_thread_listening_for_input">Interrupting a thread listening for input</h4>
+<div class="paragraph">
+<p>What if a thread is waiting for some input? For example, listening on a server socket (on the <code>accept()</code> method) for incoming requests from clients? Would the accept method throw an <code>InterruptedException</code>, <code>InterruptedIOException</code> or any kind of exception in case the thread is interrupted? The answer is no. The <code>InterruptedException</code> exception is thrown only by methods that bring a thread into WAITING or TIMED_WAITING state. The <code>ServerSocket.accept()</code> method keeps the thread in RUNNABLE state despite the fact that the thread is waiting on IO. That&#8217;s what you should expect calling any IO blocking operations. The fact that you interrupted a thread waiting on IO doesn&#8217;t magically tell IO to stop blocking the thread. In our example the socket doesn&#8217;t know about the interruption, and it keeps listening for incoming requests and keeps blocking the thread.</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/konoplev/thread/blob/1af062780f7a7e22068b7fc99a0957886b3cc428/src/test/java/thread/StopThreadTest.java#L36">link to the source code</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    AtomicBoolean exceptionCaught = new AtomicBoolean(false);
+    AtomicInteger receivedInput = new AtomicInteger(0);
+    var port = ThreadLocalRandom.current().nextInt(10000, 20000);
+    Thread threadToStop = new Thread(() -&gt; {
+      try (ServerSocket socket = new ServerSocket(port);
+          var clientSocket = socket.accept();
+          InputStreamReader inputStream = new InputStreamReader(clientSocket.getInputStream())) {
+        var read = inputStream.read();
+        receivedInput.compareAndSet(0, read);
+      } catch (IOException e) {
+        exceptionCaught.compareAndSet(false, true);
+      }
+    });
+    threadToStop.start();
+    threadToStop.interrupt();
+    threadToStop.join(100);
+    assertThat(exceptionCaught.get(), is(false));
+    assertThat(threadToStop.isAlive(), is(true));
+    assertThat(threadToStop.getState(), is(State.RUNNABLE));
+
+    // after interrupting we even can send input to the thread
+    try (Socket socket = new Socket("localhost", port); PrintWriter out = new PrintWriter(socket.getOutputStream(),
+        true)) {
+      out.write(10);
+    }
+    threadToStop.join(100);
+    assertThat(receivedInput.get(), is(10));</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Even though the thread is interrupted it&#8217;s still alive and listening for input. We can even send a message to the socket.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Not any stream reading is blocking. For example, FileInputStream can be read from beginning to end. So the thread reading from the file is done as soon as the file is read.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_how_to_handle_thread_interruption_in_a_thread_listening_for_input">How to handle thread interruption in a thread listening for input</h4>
+<div class="paragraph">
+<p>The golden rule is "don&#8217;t wait forever". Always use a timeout. In the same way it works for the <code>Thread.join(timout)</code> method, and it should work for any IO methods. Find a way to set a timeout. For socket the method is <code>Socket.setSoTimeout()</code>.</p>
+</div>
+<div class="paragraph">
+<p>As soon as the timeout is set you need to implement the interruption handling. When the <code>interrupt()</code> method is called on a thread that is not in a waiting state (so, the <code>InterruptedException</code> is not thrown), the method sets the interrupted flag of the thread to true. The flag can be checked by calling <code>Thread.isInterrupted()</code>. So, the interrupted thread can handle the interruption (for example close any open resources and exit). In our example all open resources are closed automatically (by the try-with-resources), so the thread just need to stop listen on the <code>accept()</code> method.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+If there is no way to set the timout, the client interrupting the thread should close the IO operation before the interruption. Otherwise, the thread will be stuck in the blocking method. From design point of view, it&#8217;s not good to let client know about internal thread details. So, the timout is preferable, since it keeps internal details encapsulated and client is not aware of any IO, it just know that there is some job that has to be interrupted.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/konoplev/thread/blob/1af062780f7a7e22068b7fc99a0957886b3cc428/src/test/java/thread/StopThreadTest.java#L66">link to the source code</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    AtomicBoolean exceptionCaught = new AtomicBoolean(false);
+    var port = ThreadLocalRandom.current().nextInt(10000, 20000);
+    Thread threadToStop = new Thread(() -&gt; {
+      try (ServerSocket socket = new ServerSocket(port)) {
+        socket.setSoTimeout(10);
+        while (!Thread.currentThread().isInterrupted()) {
+          try (var clientSocket = socket.accept();
+              InputStreamReader inputStream = new InputStreamReader(clientSocket.getInputStream())) {
+            var read = inputStream.read();
+            // process input
+          }
+        }
+      } catch (IOException e) {
+        exceptionCaught.compareAndSet(false, true);
+      }
+    });
+    threadToStop.start();
+    threadToStop.interrupt();
+    threadToStop.join(100);
+    assertThat(threadToStop.isAlive(), is(false));</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As you see there is a very small timeout now and each time the timeout is over the thread checks if it&#8217;s interrupted. And in case of an interruption, it exits the loop and stops listening for incoming connections.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+But what happens with clients if the timeout is over? Will the client be able to establish a connection and send a request while the thread is checking for the interruption and is not waiting on the <code>Socket.accept()</code> method? Yes, this is how non-blocking IO works. Basically, there is a buffer for the input and as soon as the thread calls accept method again it receives the next input that came while the thread was checking the interruption flag or processing the previous input.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_how_to_stop_a_thread_that_is_busy_calculating_something">How to stop a thread that is busy calculating something?</h4>
+<div class="paragraph">
+<p><a href="https://github.com/konoplev/thread/blob/1af062780f7a7e22068b7fc99a0957886b3cc428/src/test/java/thread/StopThreadTest.java#L91">link to the source code</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    AtomicBoolean calculationIsDone = new AtomicBoolean(false);
+    Thread threadToStop = new Thread(() -&gt; {
+      CpuIntensiveAlgorithm.run1s();
+      calculationIsDone.set(true);
+    });
+    threadToStop.start();
+    threadToStop.interrupt();
+    threadToStop.join(100);
+    assertThat(threadToStop.isAlive(), is(true));
+    assertThat(calculationIsDone.get(), is(false));</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>No miracles, the thread is still alive and calculating. So, to process interruption we need to split the job into smaller chunks and check for interruption after each chunk is done in the same way as we did in the previous example. Don&#8217;t block the thread for a long time! Expect the interruption!</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_thread_reusing">Thread reusing</h3>
+<div class="paragraph">
+<p>The last thing to talk about is costs. Each thread occupies resources. JVM allocates about 1Mb of memory for each thread. Each thread needs time to be started. It&#8217;s an additional load for the scheduler (one more thread to schedule). So, if you have a lot of work to run in parallel it&#8217;s a good idea to reuse threads.</p>
+</div>
+<div class="sect3">
+<h4 id="_thread_pool">Thread pool</h4>
+<div class="paragraph">
+<p>The thread pool allows re-using threads. It&#8217;s one or many pre-allocated threads and a queue of lambdas which are tasks to be executed by the threads. There are multiple ways of threads allocating, the queue can be limited or unlimited, multiple policies of what to do if the queue is full, and so on, but the basic idea is that instead of being executed immediately the task is put into the queue and some thread is scheduled to execute it.
+The task is represented by an instance of the <code>Callable</code> interface. And when the <code>Callable</code> is put into the pool the result of the execution is represented by <code>Future</code>. The <code>Future</code> is a promise that the result will be available later. It allows to check the current state of the task or call <code>Future.get()</code> to wait for the result.</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/konoplev/thread/blob/1af062780f7a7e22068b7fc99a0957886b3cc428/src/test/java/thread/ReusingThreadTest.java#L14">link to the source code</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    // Create a pool of threads having only one thread.
+    ExecutorService executorService = Executors.newFixedThreadPool(1);
+    ExecutorCompletionService&lt;String&gt; executorCompletionService = new ExecutorCompletionService&lt;&gt;(executorService);
+
+    AtomicInteger executionNumber = new AtomicInteger(0);
+    Callable&lt;String&gt; task = () -&gt; {
+      var threadName = Thread.currentThread().getName();
+      return "thread name: " + threadName + ", number of execution: " + executionNumber.incrementAndGet();
+    };
+
+    // Put two tasks in the queue.
+    executorCompletionService.submit(task);
+    executorCompletionService.submit(task);
+
+    Future&lt;String&gt; firstTaskResult = executorCompletionService.take();
+    Future&lt;String&gt; secondTaskResult = executorCompletionService.take();
+    assertThat(firstTaskResult.get(), is("thread name: pool-1-thread-1, number of execution: 1"));
+    assertThat(secondTaskResult.get(), is("thread name: pool-1-thread-1, number of execution: 2"));
+    executorService.shutdown();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the above example, we created a thread pool with only one thread and submitted a task that returns the name of the thread and the number of execution. We submitted the task twice, and we can see that both tasks are executed by the same thread. This is how we re-used the thread.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_conclusion">Conclusion</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>So, now you know how to start a thread and how to wait for it to be executed. You know how to handle thread interruption and how to stop a thread that is busy calculating something or waiting for IO. You know how to use a thread pool. In the next post, we will talk about locks and synchronization. Stay tuned!</p>
+</div>
+</div>
+</div>
+                    </div>
+                    <div class="height-40px"></div>
+                    <div>
+                        <h4 class="text-center">Receive new posts to your email</h4>
+                        <div class="height-15px"></div>
+                        <ul class="social">
+                            <!-- Begin Mailchimp Signup Form -->
+                            <div id="mc_embed_signup">
+                                <form
+                                        action="https://konoplev.us9.list-manage.com/subscribe/post?u=c44fad85d7459fe096d5bf7f2&amp;id=73cb044c01"
+                                        method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form"
+                                        class="validate contact-form" target="_blank" novalidate>
+                                    <div id="mc_embed_signup_scroll">
+                                        <ul>
+                                            <li>
+                                                <div>
+                                                    <input type="email" placeholder="your email" value="" name="EMAIL" class="required email"
+                                                           id="mce-EMAIL">
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div id="mce-responses" class="clear foot">
+                                                    <div class="response" id="mce-error-response" style="display:none">
+                                                    </div>
+                                                    <div class="response" id="mce-success-response"
+                                                         style="display:none"></div>
+                                                </div>
+                                                <!-- real people should not fill this in and expect good things - do not remove this or risk form bot signups-->
+                                                <div style="position: absolute; left: -5000px;" aria-hidden="true">
+                                                    <input type="text" name="b_c44fad85d7459fe096d5bf7f2_73cb044c01"
+                                                           tabindex="-1" value=""></div>
+                                                <div class="optionalParent">
+                                                    <div class="clear foot">
+                                                        <input type="submit" value="Subscribe" name="subscribe"
+                                                               id="mc-embedded-subscribe"
+                                                               class="btn-send btn-5 btn-5b">
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </form>
+                            </div>
+                            <script type='text/javascript'
+                                    src='//s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js'></script>
+                            <script type='text/javascript'>(function ($) {
+                                window.fnames = new Array();
+                                window.ftypes = new Array();
+                                fnames[0] = 'EMAIL';
+                                ftypes[0] = 'email';
+                                fnames[1] = 'FNAME';
+                                ftypes[1] = 'text';
+                                fnames[2] = 'LNAME';
+                                ftypes[2] = 'text';
+                                fnames[3] = 'ADDRESS';
+                                ftypes[3] = 'address';
+                                fnames[4] = 'PHONE';
+                                ftypes[4] = 'phone';
+                                fnames[5] = 'BIRTHDAY';
+                                ftypes[5] = 'birthday';
+                            }(jQuery));
+                            var $mcj = jQuery.noConflict(true);</script>
+                        </ul>
+                        <!--End mc_embed_signup-->
+                    </div>
+                    <div>
+                        <h4 class="text-center">Liked the post? Share it!</h4>
+                        <div class="height-15px"></div>
+                        <ul class="social">
+                            <li class="facebook">
+                                <a href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Fkonoplev.me&t="
+                                   target="_blank" title="Share on Facebook"
+                                   onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(document.URL)); return false;">
+                	<span class="ion-social-facebook">
+                                </a>
+                            </li>
+                            <li class="twitter">
+                                <a href="https://twitter.com/intent/tweet?source=http%3A%2F%2Fkonoplev.me&text=:%20http%3A%2F%2Fkonoplev.me"
+                                   target="_blank" title="Tweet"
+                                   onclick="window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(document.title) + ':%20' + encodeURIComponent(document.URL)); return false;">
+                	<span class="ion-social-twitter">
+                                </a>
+                            </li>
+                            <li class="pinterest">
+                                <a href="http://pinterest.com/pin/create/button/?url=http%3A%2F%2Fkonoplev.me&description="
+                                   target="_blank" title="Pin it"
+                                   onclick="window.open('http://pinterest.com/pin/create/button/?url=' + encodeURIComponent(document.URL) + '&description=' +  encodeURIComponent(document.title)); return false;">
+                	<span class="ion-social-pinterest">
+                                </a>
+                            </li>
+                            <li class="reddit">
+                                <a href="http://www.reddit.com/submit?url=http%3A%2F%2Fkonoplev.me&title="
+                                   target="_blank" title="Submit to Reddit"
+                                   onclick="window.open('http://www.reddit.com/submit?url=' + encodeURIComponent(document.URL) + '&title=' +  encodeURIComponent(document.title)); return false;">
+                	<span class="ion-social-reddit">
+                                </a>
+                            </li>
+                            <li class="linkedin">
+                                <a href="http://www.linkedin.com/shareArticle?mini=true&url=http%3A%2F%2Fkonoplev.me&title=&summary=&source=http%3A%2F%2Fkonoplev.me"
+                                   target="_blank" title="Share on LinkedIn"
+                                   onclick="window.open('http://www.linkedin.com/shareArticle?mini=true&url=' + encodeURIComponent(document.URL) + '&title=' +  encodeURIComponent(document.title)); return false;">
+                	<span class="ion-social-linkedin">
+                                </a>
+                            </li>
+                            <li class="email-icon">
+                                <a href="mailto:?subject=&body=:%20http%3A%2F%2Fkonoplev.me"
+                                   target="_blank" title="Email"
+                                   onclick="window.open('mailto:?subject=' + encodeURIComponent(document.title) + '&body=' +  encodeURIComponent(document.URL)); return false;">
+                	<span class="ion-email">
+                                </a>
+                            </li>
+                        </ul>
+
+                    </div>
+                    <div>
+                        <div id="remark42" aria-live="polite">
+                            <noscript>Please enable JavaScript to view the comments</noscript>
+                        </div>
+                    </div>
+                </article>
+
+            </main>
+        </div>
+    </div>
+</div>
+
+<script>
+    var remark_config = {
+        host: "https://comments.konoplev.me",
+        site_id: 'konoplev',
+    };
+
+    (function (c) {
+        for (var i = 0; i < c.length; i++) {
+            var d = document, s = d.createElement('script');
+            s.src = remark_config.host + '/web/' + c[i] + '.js';
+            s.defer = true;
+            (d.head || d.body).appendChild(s);
+        }
+    })(remark_config.components || ['embed']);
+    hljs.highlightAll();
+</script>
+
+    <footer id="site-footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <p class="copyright">&copy; 2022 Alexander Konoplev</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Mobile Menu -->
+<div class="overlay overlay-hugeinc">
+    <button type="button" class="overlay-close"><span class="ion-ios-close-empty"></span></button>
+    <nav>
+        <ul>
+            <li><a href="../../../index.html">About</a></li>
+            <li><a href="../../../en/thoughts/index/1.html">Thoughts</a></li>
+            <li><a href="../../../en/programming/index/1.html">Programming</a></li>
+        </ul>
+    </nav>
+</div>
+
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript" >
+  (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+  (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+  ym(55474030, "init", {
+    clickmap:true,
+    trackLinks:true,
+    accurateTrackBounce:true,
+    webvisor:true
+  });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/55474030" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+
+
+<!-- /Yandex.Metrika counter -->
+
+<script src="../../../js/script.js"></script>
+
+</body>
+</html>
