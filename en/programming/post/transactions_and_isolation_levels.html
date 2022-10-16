@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Transactions and isolation levels</title>
+
+    <!-- meta -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- css -->
+    <link rel="stylesheet" href="../../../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../../css/ionicons.min.css">
+    <link rel="stylesheet" href="../../../css/pace.css">
+    <link rel="stylesheet" href="../../../css/custom.css">
+    <link rel="stylesheet" href="../../../css/asciidoc.css">
+    <link rel="stylesheet" href="../../../css/idea.min.css">
+
+    <!-- js -->
+    <script src="../../../js/jquery-2.1.3.min.js"></script>
+    <script src="../../../js/bootstrap.min.js"></script>
+    <script src="../../../js/pace.min.js"></script>
+    <script src="../../../js/modernizr.custom.js"></script>
+    <script src="../../../js/highlight.min.js"></script>
+</head>
+
+<body id="single">
+<div class="container">
+    <div class="container">
+        <header id="site-header">
+    <div class="row">
+        <div class="col-md-4 col-sm-5 col-xs-8">
+            <div class="logo">
+                <h1><a href="../../../index.html"><b>Konoplev's</b> Blog</a></h1>
+            </div>
+        </div><!-- col-md-4 -->
+        <div class="col-md-8 col-sm-7 col-xs-4">
+            <nav class="main-nav" role="navigation">
+                <div class="navbar-header">
+                    <button type="button" id="trigger-overlay" class="navbar-toggle">
+                        <span class="ion-navicon"></span>
+                    </button>
+                </div>
+
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="cl-effect-11"><a href="../../../index.html" data-hover="About">About</a></li>
+                        <li class="cl-effect-11"><a href="../../../en/thoughts/index/1.html" data-hover="Thoughts">Thoughts</a></li>
+                        <li class="cl-effect-11"><a href="../../../en/programming/index/1.html" data-hover="Programming">Programming</a></li>
+                    </ul>
+                </div><!-- /.navbar-collapse -->
+            </nav>
+            <div id="header-search-box">
+                <a id="search-menu" href="#"><span id="language-icon" class="ion-android-globe"></span></a>
+                <div id="language-form" class="language-form">
+                    <div id="searchform">
+                                                
+                        <div class="text-center"><a href="../../../ru/programming/index/1.html" data-hover="About">По-русски</a><div>
+                            <button type="submit"><span class="ion-android-globe"></span></button>
+                        </div>
+                        </div>
+                    </div>
+                </div><!-- col-md-8 -->
+            </div>
+</header>    </div>
+</div>
+
+<div class="content-body">
+    <div class="container">
+        <div class="row">
+            <main class="col-md-12">
+                <article class="post post-1">
+                    <header class="entry-header">
+                        <h1 class="entry-title">Transactions and isolation levels</h1>
+                        <div class="entry-meta">
+                            <span class="post-date"><a href="#"><time class="entry-date"
+                                                                      datetime="2022-10-14T22:00:00Z">Oct 15, 2022</time></a></span>
+
+                            <span class="post-category">
+                                                                    <a href="../tag/concurrency/1.html"> #concurrency</a>
+                                                                    <a href="../tag/databases/1.html"> #databases</a>
+                                                            </span>
+
+                                                    </div>
+                        <figure class="img-responsive-center">
+                            <img class="img-responsive" src="./transactions_and_isolation_levels.png"
+                                 alt="Developer Image"/>
+                        </figure>
+                    </header>
+                    <div class="entry-content clearfix">
+                                                <div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>The main problem with relational databases is that any developer implementing an application executing SQL queries should understand how DB works under the hood, why and when to start transactions, and what&#8217;s the difference between isolation levels. So, that&#8217;s not enough to just know SQL or some ORM. Read this post if you&#8217;re not sure what are the proper answers to the above questions. Also, we will discuss some differences between relational database implementations. You&#8217;ll see, for example, that <code>REPEATABLE_READ</code> and <code>READ_UNCOMMITED</code> work differently in MySQL and Postgress. The discussion is very practical. There are lots of examples. For instance, we not just talk about pessimistic and optimistic locking but also when it&#8217;s crucial for your application. I hope this post will clarify all questions that you had about transactions.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_why_transactions">Why transactions?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>One of the big German banks has a mobile application allowing users to create sub-accounts besides the main account. So, you can transfer money from the main account to a sub-account to, for example, save up money for some purpose. But money transferring from the main account to the sub-account takes a lot of time (days) for some reason. So you have enough time to notice that after the transfer process is started, the money is gone from your main account, and disappeared. Eventually, the sub-account will receive the money, but until then, it looks like your money is just gone. To avoid such cases, transactions were introduced (but, as you see, still not used everywhere).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_is_a_transaction">What is a transaction?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A transaction is a way to execute one or many operations atomically and isolated.</p>
+</div>
+<div class="sect2">
+<h3 id="_atomicity">Atomicity</h3>
+<div class="paragraph">
+<p>Each transaction has a beginning, a set of operations, and an end. As we mentioned in <a href="https://konoplev.me/en/programming/post/thread_racing.html#_atomicity">the previous post</a>, atomicity means that either all operations between the beginning and the end are executed or all operations are reverted. The operations can&#8217;t be applied partially. In our example, in case something happened and the sub-account is not updated, the change made on the main account should be reverted. Both accounts should be updated or no changes are made in case one of the intermediate operations failed. So, the end of each transaction is "commit" (all changes are persisted in the database) in case all operations are successful or "rollback" (no changes are persisted in the database) in case there was any failure.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_isolation">Isolation</h3>
+<div class="paragraph">
+<p>Atomicity is not an issue when transactions are executed sequentially. But to improve performance most relational databases allow multiple transactions to run in parallel (to get them done faster or utilize resources better).</p>
+</div>
+<div class="paragraph">
+<p>When transactions have no intersections (change and read different rows) they can be safely executed in parallel without any additional protection. So by default, DBs usually do very minimal checks.</p>
+</div>
+<div class="paragraph">
+<p>What if two transactions read or write the same data? Because of the parallel execution, some changes of some transactions could be not atomic (in our example, one transaction sees partial changes of another). Isolation regulates what kind of changes of shared data made before "commit" by one transaction are visible for another.
+So, when developers know that some particular transaction could potentially use stale or partially written data, they should be able to ask DB to provide a way to isolate the transaction and avoid modifications based on wrong data. There are different cases and so, different isolation layers. Below we check them in detail. Why do we need different levels? As we already mentioned preventing race conditions usually degrades performance, so it&#8217;s up to developers to find a trade-off between keeping consistency and performance.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_acid">ACID?</h3>
+<div class="paragraph">
+<p>Atomicity and Isolation are A and I from the famous ACID acronym. In relational databases data is represented as tables linked to other tables (using secondary and primary keys). So, very often changes made in one table require linked tables change or changes in the same table but other rows. All these changes as we&#8217;ve seen have to be atomic and isolated, otherwise, the data could become inconsistent. The consistency is C from ACID. What is D? It&#8217;s durability. A database guarantees that any data written into the database can be fetched later. Obviously, a database itself can&#8217;t guarantee C and D. D depends on physical storage, for example. In case the disc is broken, the data stored on this disc can&#8217;t be fetched anymore. And the database can&#8217;t guarantee C. As we mentioned, the only way to try to achieve C automatically is to execute transactions sequentially. But even in this case, a user could just write some inconsistent data because of bugs in the application.</p>
+</div>
+<div class="paragraph">
+<p>Summarizing, ACID is more of a marketing term. From the technical point of view, only atomicity and isolation make sense.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_types_of_race_conditions_and_isolation_layers_allowing_to_avoid_them">Types of race conditions and isolation layers allowing to avoid them</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_about_examples">About examples</h3>
+<div class="paragraph">
+<p>We&#8217;re going to use Spring Boot with Spring Data and test containers to reproduce possible race conditions. But you can reproduce them by performing the same steps manually.</p>
+</div>
+<details>
+<summary class="title">Click to expand: Instructions on how to reproduce things manually (you should have <a href="https://docs.docker.com/get-docker/">docker</a> installed):</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">container_id=$(docker run -e POSTGRES_HOST_AUTH_METHOD=trust -v /tmp/postgres-data:/var/lib/postgresql/data -td postgres)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now open two terminal windows and run the following command in them</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">docker exec -it $container_id /usr/bin/psql -U postgres</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In one of the terminals run the commands from <a href="https://github.com/konoplev/isolation/blob/master/create.sql">this file</a> to create the tables we&#8217;re going to use in our examples.</p>
+</div>
+<div class="paragraph">
+<p>So, you have two parallel terminals to simulate two parallel clients sending instructions concurrently. The commands can be found in test logs.</p>
+</div>
+</div>
+</details>
+<div class="sect3">
+<h4 id="_some_implementation_details">Some implementation details</h4>
+<div class="paragraph">
+<p>I use <a href="https://spring.io/projects/spring-boot">Spring Boot</a> to implement all examples. This framework allows us to focus on important details and hide boring low-level things behind abstractions. Also, we&#8217;re going to use a great tool called <a href="https://www.testcontainers.org">TestContainers</a> to be able to execute our examples in different databases (MySQL and Postgres) and discover some database-specific aspects.</p>
+</div>
+<div class="paragraph">
+<p>If you&#8217;re not familiar with Spring Boot and test containers below is a short description of some features you need to know to proceed.</p>
+</div>
+<div class="paragraph">
+<p>Spring data provides an annotation called <code>@Transactional</code>. Any methods marked by this annotation and processed by Spring Data will be automatically wrapped in a transaction. There are multiple parameters of the annotation, but the most important for us are <code>isolation</code> and <code>propagation</code>. The <code>propagation</code> allows specifying how to deal with the existing transaction. We change the default behavior (which is to use the existing transaction) to create a new transaction each time. This is how we guarantee that each method is executed in a separate transaction. The <code>isolation</code> allows specifying the isolation level. We created <a href="https://github.com/konoplev/isolation/blob/master/src/main/java/me/konoplev/isolation/util/TransactionsWrapper.java">wrappers</a> for each isolation level, so we can simply call a method and execute a lambda passed into the method in a separate transaction with specified isolation level.</p>
+</div>
+<div class="paragraph">
+<p>To be able to run our examples with a specific database we created <code>@MySqlTest</code> and <code>@PostgresTest</code> annotations with corresponding <a href="https://github.com/konoplev/isolation/blob/master/src/test/java/me/konoplev/isolation/MySqlTestExtension.java">MySqlTestExtension.class</a> and <a href="https://github.com/konoplev/isolation/blob/master/src/test/java/me/konoplev/isolation/PostgresTestExtension.java">PostgresTestExtension.class</a> extensions. The extensions use test containers to start a docker container with one of the databases. So, each example is an annotated JUnit test running with a real database.</p>
+</div>
+<div class="paragraph">
+<p>To be able to reproduce any race conditions we use <a href="https://github.com/konoplev/mutex/blob/master/src/main/java/phases/PhaseSync.java">PhaseSync.java</a> that we created previously. See details about it at <a href="https://github.com/konoplev/mutex#practice">the previous blog post</a>. Basically, the class allows reproducing race conditions by splitting a sequence of steps leading to an inconsistent state into several phases that a run by several actors (threads or, in our case, transactions). Each transaction runs in a separate thread (We use <code>CompletableFuture.runAsync(java.lang.Runnable)</code> for it. See my <a href="https://konoplev.me/en/programming/post/the_hidden_life_of_threads.html#_thread_pool#">post about threads</a> if you need more details). In all examples, we have two <code>runAsync</code> calls and two transactions.</p>
+</div>
+<div class="sect4">
+<h5 id="_the_database_schema">The database schema</h5>
+<div class="paragraph">
+<p>To demonstrate race conditions and isolation levels preventing them I created a simple example. We have an entity User</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">@Entity
+@Table(name = "users")
+@Data
+public class User {
+
+  @Id
+  @GeneratedValue
+  private Integer id;
+
+  @Column(unique=true, name = "user_name")
+  private String userName;
+
+  @OneToMany(fetch = FetchType.EAGER, mappedBy = "user", cascade = CascadeType.ALL)
+  private List&lt;Account&gt; accounts = new ArrayList&lt;&gt;();
+
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see a user could have some accounts (one to many relationships). And the account is just a storage for some amount of money. This is what it looks like:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">@Entity
+@Table(name = "account")
+@Data
+public class Account {
+
+  @Id
+  @GeneratedValue
+  private Integer id;
+
+  @ManyToOne
+  @JoinColumn(name = "user_id")
+  @ToString.Exclude
+  private User user;
+
+  private int amount;
+
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In all examples, we just have one user and transfer money from one user&#8217;s account to another.</p>
+</div>
+<div class="paragraph">
+<p>To store/fetch data to/from corresponding tables we use <code>AccountRepository</code> and <code>UserRepository</code>. Both are standard JpaRepositories. To simplify things we add a method allowing to update account table. We&#8217;ll need it for the "transfers".</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">public interface AccountRepository extends JpaRepository&lt;Account, Integer&gt; {
+
+  @Modifying(clearAutomatically = true)
+  @Query("update Account a set a.amount = :newAmount where a.id = :id")
+  void updateAmount(@Param("id") Integer id, @Param("newAmount") int newAmount);
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_dirty_read">Dirty read</h3>
+<div class="paragraph">
+<p>Any changes made by any parallel transaction are immediately visible to the <code>READ_UNCOMMITTED</code> one. Sometimes it makes data inconsistent for the <code>READ_UNCOMMITTED</code> transaction. It&#8217;s called dirty read.</p>
+</div>
+<div class="paragraph">
+<p>We already discussed an example at the beginning of the post. The first (writing) transaction transfers money from one account to another and the second (reading) transaction having <code>READ_UNCOMMITTED</code> isolation level sees the system at the moment when money is gone from one account but has not been received by another. So, for the <code>READ_UNCOMMITTED</code> there is less money in the system than it is in reality. Let&#8217;s implement it</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">  //given
+    final var amountToTransfer = 30;
+    final var firstAccountInitialAmount = 40;
+    final var secondAccountInitialAmount = 50;
+
+    var user = new User();
+    user.setUserName("someName");
+    var account1 = new Account();
+    account1.setId(1);
+    account1.setUser(user);
+    account1.setAmount(firstAccountInitialAmount);
+    var account2 = new Account();
+    account2.setId(2);
+    account2.setAmount(secondAccountInitialAmount);
+    account2.setUser(user);
+    user.setAccounts(List.of(account1, account2));
+    userRepository.saveAndFlush(user);
+
+    // expect
+    PhaseSync phaseSync = new PhaseSync();
+    runAsync(() -&gt; {
+      transactionsWrapper.readUncommitted(() -&gt; {
+        phaseSync.phase(Phases.FIRST, () -&gt;
+                accountRepository.updateAmount(1, firstAccountInitialAmount - amountToTransfer)
+                       );
+        phaseSync.phase(Phases.THIRD, () -&gt;
+                accountRepository.updateAmount(2, secondAccountInitialAmount + amountToTransfer)
+                       );
+
+      });
+    });
+
+    final AtomicInteger firstAccountAmount = new AtomicInteger(0);
+    final AtomicInteger secondAccountAmount = new AtomicInteger(0);
+    runAsync(() -&gt; {
+      transactionsWrapper.readUncommitted(() -&gt; {
+        phaseSync.phase(Phases.SECOND, () -&gt; {
+          accountRepository.findById(1).map(Account::getAmount)
+              .ifPresent(amount -&gt; firstAccountAmount.compareAndSet(0, amount));
+          accountRepository.findById(2).map(Account::getAmount)
+              .ifPresent(amount -&gt; secondAccountAmount.compareAndSet(0, amount));
+        });
+      });
+    });
+
+    phaseSync.phase(Phases.FOURTH, () -&gt; {/* all phases are done*/});
+    assertThat(phaseSync.exceptionDetails(), phaseSync.noExceptions(), is(true));
+    assertThat(firstAccountAmount.get() + secondAccountAmount.get(),
+        not(firstAccountInitialAmount + secondAccountInitialAmount));
+
+    assertThat(firstAccountAmount.get() + secondAccountAmount.get(),
+        is(firstAccountInitialAmount + secondAccountInitialAmount - amountToTransfer));</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see the second (reading) transaction sees less money in the system. The <code>amountToTransfer</code> is hidden.</p>
+</div>
+<div class="paragraph">
+<p>Another problem is that a <code>READ_UNCOMMITTED</code> transaction could read and use some data that is rolled back by another transaction later. In the below example, we create a user without accounts and start two transactions with <code>READ_UNCOMMITED</code> isolation levels. Please note, that according to our schema each user should have a unique username.
+Here is what happens next:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The second transaction checks that there are 0 accounts in the system. That&#8217;s expected.</p>
+</li>
+<li>
+<p>The first transaction creates an account with some amount.</p>
+</li>
+<li>
+<p>The second transaction checks that now there is one account in the system. Since the transactions have "read uncommitted" that&#8217;s also expected and probably fine.</p>
+</li>
+<li>
+<p>The first transaction creates a user with the same username that the existing user has. When we try to store this user we get <code>DataIntegrityViolationException</code>. We can&#8217;t have two users with the same username.</p>
+</li>
+<li>
+<p>The whole transaction violated the integrity is reverted. It means the changes to create the account are reverted as well.</p>
+</li>
+<li>
+<p>The second transaction checks the number of accounts. It&#8217;s 0 again. So, the first transaction was able to see the changes that violated consistency and were reverted.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    //given
+    transactionsWrapper.readCommitted(() -&gt; {
+      var user = new User();
+      user.setUserName("someName");
+      userRepository.saveAndFlush(user);
+    });
+
+    //expected
+    var phaseSync = new PhaseSync();
+    runAsync(() -&gt; {
+      try {
+        transactionsWrapper.readUncommittedFallible(() -&gt; {
+          //partially create an account
+          var account = new Account();
+
+          phaseSync.phase(Phases.SECOND, () -&gt; {
+            account.setAmount(10);
+            accountRepository.saveAndFlush(account);
+          });
+
+          phaseSync.phaseWithExpectedException(Phases.FOURTH, () -&gt; {
+            var user = new User();
+            user.setAccounts(List.of(account));
+            user.setUserName("someName");
+            userRepository.saveAndFlush(user);
+            //the exception is thrown because there is an account with this name already
+            //so the whole transaction is reverted
+          }, DataIntegrityViolationException.class);
+          phaseSync.ifAnyExceptionRethrow();
+        });
+      } catch (Exception e) {
+        phaseSync.phase(Phases.FIFTH, () -&gt; {
+          //Spring is rolling the transaction back
+        });
+      }
+    });
+
+    transactionsWrapper.readUncommitted(() -&gt; {
+      phaseSync.phase(Phases.FIRST, () -&gt; {
+        //there are no accounts yet
+        assertThat(accountRepository.count(), is(0L));
+      });
+
+      //now another transaction runs in parallel and creates the account
+      phaseSync.phase(Phases.THIRD, () -&gt; {
+        //this transaction sees that there is 1 account, but it will be reverted soon
+        assertThat(accountRepository.count(), is(1L));
+      });
+
+      // the parallel transaction is rolled back. no accounts again
+      phaseSync.phase(Phases.SIXTH, () -&gt; {
+        assertThat(accountRepository.count(), is(0L));
+      });
+    });
+
+    phaseSync.phase(Phases.SEVENTH, () -&gt; {/*done with all phases*/});
+    assertThat(phaseSync.exceptionDetails(), phaseSync.noExceptions(), is(true));</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>No transactions should be able to see changes made by a transaction that breaks consistency and is reverted because of that.</p>
+</div>
+<div class="sect3">
+<h4 id="_to_fix">To fix</h4>
+<div class="paragraph">
+<p>How to fix the issue? There is a stricter level called READ_COMMITTED. But which transaction should have this level to fix the issue? The first (writing) transaction, the second (reading), or both? You can guess from the name that we need to change the reading transaction. So, it&#8217;s enough to change the level of the second transaction.</p>
+</div>
+<div class="paragraph">
+<p>Also, note that the test is annotated with <code>@MySqlTest</code>. Try to change it to <code>@PostgresTest</code> and you&#8217;ll get the test failed. Why? There is no <code>READ_UNCOMMITED</code> level in Postgres. The weakest level is <code>READ_COMMITTED</code>, so even if you run a transaction with <code>READ_UNCOMMITED</code> level it will be interpreted by Postgres as <code>READ_COMMITTED</code>. That&#8217;s why it&#8217;s crucial to test your code with real databases. There are some important details.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_when_read_uncommited_is_ok">When READ_UNCOMMITED is ok</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>When you&#8217;re fine to read eventually consistent data. For example, you log some info about users visiting your website to show some statistics about the users on some dashboard. You&#8217;re probably fine if the data is slightly not up to date or not consistent for a moment.</p>
+</li>
+<li>
+<p>You insert records into one table and never update this data. Both reading and writing transactions can be READ_UNCOMMITED but still have consistent data. Why? DBs guarantee that data is atomic on a row level (a row can&#8217;t be written partially). Since the data is never updated, no transactions can make it inconsistent.</p>
+</li>
+<li>
+<p>When you know that there are no transactions that touch the same data. But be careful with that. You never know when it&#8217;s changed. Cover your code with tests to catch it.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>As you can see that all cases are very rare. So, READ_UNCOMMITED is for very edge cases.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_non_repeatable_read">Non-repeatable Read</h3>
+<div class="paragraph">
+<p>Does <code>READ_COMMITTED</code> mean that we always read consistent data? Unfortunately, not. The same case: The first (writing) transaction transfers money from one account to another and the second (reading) transaction having <code>READ_COMMITTED</code> gets a sum of money on both accounts. The result still depends on the order. What if the reading transaction gets the amount from the first account before the writing transaction started and gets the amount from the second account after the writing transaction is committed?</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Account 1 has 40, and Account 2 has 50.</p>
+</li>
+<li>
+<p>The reading transaction reads 40 from Account 1</p>
+</li>
+<li>
+<p>The writing transaction transfers 30 from Account 1 to Account 2 and commits. So, Account 1 has 10, Account 2 has 80. The transaction is committed. So, the changes are available for the reading transaction.</p>
+</li>
+<li>
+<p>The reading transaction reads 80 from Account 2.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>So, from the reading transaction point of view, there is more money in the system than in reality.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    //given
+    final var amountToTransfer = 30;
+    final var firstAccountInitialAmount = 40;
+    final var secondAccountInitialAmount = 50;
+
+    var user = new User();
+    user.setUserName("someName");
+    var account1 = new Account();
+    account1.setId(1);
+    account1.setUser(user);
+    account1.setAmount(firstAccountInitialAmount);
+    var account2 = new Account();
+    account2.setId(2);
+    account2.setAmount(secondAccountInitialAmount);
+    account2.setUser(user);
+    user.setAccounts(List.of(account1, account2));
+    userRepository.saveAndFlush(user);
+
+    //expected
+    PhaseSync phaseSync = new PhaseSync();
+
+    runAsync(() -&gt; {
+      phaseSync.phase(Phases.SECOND, () -&gt;
+          transactionsWrapper.readCommitted(() -&gt; {
+            accountRepository.updateAmount(1, firstAccountInitialAmount - amountToTransfer);
+            accountRepository.updateAmount(2, secondAccountInitialAmount + amountToTransfer);
+          }));
+    });
+
+    final AtomicInteger firstAccountAmount = new AtomicInteger(0);
+    final AtomicInteger secondAccountAmount = new AtomicInteger(0);
+    runAsync(() -&gt; {
+      transactionsWrapper.readCommitted(() -&gt; {
+        //read before another transaction started
+        phaseSync.phase(Phases.FIRST, () -&gt;
+            accountRepository.findById(1).map(Account::getAmount)
+                .ifPresent(amount -&gt; firstAccountAmount.compareAndSet(0, amount)));
+        //we need to clear caches, otherwise we can read cached value
+        entityManager.clear();
+        //read after another transaction finished
+        phaseSync.phase(Phases.THIRD, () -&gt;
+            accountRepository.findById(2).map(Account::getAmount)
+                .ifPresent(amount -&gt; secondAccountAmount.compareAndSet(0, amount)));
+      });
+    });
+
+    phaseSync.phase(Phases.FOURTH, () -&gt; {/* all phases are done*/});
+    assertThat(phaseSync.exceptionDetails(), phaseSync.noExceptions(), is(true));
+    assertThat(firstAccountAmount.get() + secondAccountAmount.get(),
+        not(firstAccountInitialAmount + secondAccountInitialAmount));
+
+    assertThat(firstAccountAmount.get() + secondAccountAmount.get(),
+        is(firstAccountInitialAmount + secondAccountInitialAmount + amountToTransfer));</code></pre>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_to_fix_2">To fix</h4>
+<div class="paragraph">
+<p>In our example, while the reading transaction is executing, the writing transaction changes the data that the reading transaction has already read. The data is changed and committed. So if the reading transaction had read this data again, the result of the reading would have been different. The read is not repeatable. The next isolation level is <code>REPEATABLE_READ</code>. It makes the read repeatable. So, the reading transaction is isolated from the writing transaction. It means that even though the transaction is executed in parallel, the result for the reading transaction looks like the execution was sequential. How does it work?</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_mvcc_how_the_repeatable_read_works_under_the_hood">MVCC. How the <code>REPEATABLE_READ</code> works under the hood</h4>
+<div class="paragraph">
+<p>How would you implement the <code>REPEATABLE_READ</code>? How to detect that there is another transaction that updated the row that our transaction used to make a decision?</p>
+</div>
+<div class="paragraph">
+<p>There is an elegant solution called MVCC (Multiversion concurrency control). Let&#8217;s assign a unique identifier to each transaction. The identifier is always-increasing, so if transaction A started before transaction B, then A&#8217;s id is lower than B&#8217;s id. The changes are not immediately written into rows. We add transaction id to the row&#8217;s data. So when some row is inserted we add the corresponding transaction id to it. When it&#8217;s updated we keep both the old version (with the old transaction id) and the updated version with the new transaction id. And when some row is removed, we don&#8217;t remove it but mark it as removed with the corresponding transaction id.</p>
+</div>
+<div class="paragraph">
+<p>The versioning allows us to create a virtual snapshot of the whole DB for each transaction. It doesn&#8217;t matter how many parallel transactions are running and which rows are changed by them. Each transaction "sees" its own DB snapshot taken at the time the transaction is started. A transaction is allowed to "see" only rows that have an id less than the transaction&#8217;s id and that were committed already at the time the transaction started. So, for each transaction the DB:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>creates a list of all in-progress transactions</p>
+</li>
+<li>
+<p>any writes made by these transactions are ignored</p>
+</li>
+<li>
+<p>any writes made by transactions with a later transaction id (started after the current transaction is started, so not in the in-progress list) are also ignored</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The 1 + 2 make a transaction <code>READ_COMMITTED</code>. The 1 + 2 + 3 make a transaction <code>REPEATABLE_READ</code>.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s see how <code>REPEATABLE_READ</code> works in our example:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The transaction inserting the initial data is executed. Say the transaction has T0 id. So Account 1 has 40 (and version T0), and Account 2 has 50 (and version T0).</p>
+</li>
+<li>
+<p>The reading transaction (T1) is started. The <code>in-progress</code> list is empty. Nothing to ignore. It reads 40 from Account 1 (version T0 is visible for T1)</p>
+</li>
+<li>
+<p>The writing transaction (T2) is started. The <code>in-progress</code> contains T1 (but there will be no rows committed by T1 because it&#8217;s read-only, so nothing to ignore as well). T2 transfers 30 from Account 1 to Account 2 and commits. So, there are 2 versions of both accounts. Additionally to T0: Account 1 has 10 (and version T2), and Account 2 has 80 (and version T2).</p>
+</li>
+<li>
+<p>The reading transaction reads the amount from Account 2. There are two versions of this account, but the T2 version is not visible for the reading transaction because it has a lower id T1. So the reading transaction reads 50 from Account 2 (version T0).</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Now the data is consistent. And it looks like the reading transaction started and was committed before the writing transaction. Even if the writing transaction has started and was committed in the middle of the reading transaction.</p>
+</div>
+<div class="paragraph">
+<p>What if the writing transaction is started before the reading transaction and has not been committed while the reading transaction is executed? The result is the same. Even if there is a new version of both accounts, it&#8217;s not visible for the reading transaction because only committed versions to become visible.</p>
+</div>
+<div class="paragraph">
+<p>What if:
+1. the writing transaction is started and updated the first account.
+2. then the reading transaction starts and reads the first account.
+3. after that the writing transaction updates the second account and commits.
+4. then the reading transaction reads the second account</p>
+</div>
+<div class="paragraph">
+<p>The same. In steps 2 and 4 the reading transaction sees only the old value of the second account because the writing transaction was in progress when the reading transaction started.</p>
+</div>
+<div class="paragraph">
+<p>Try to check any order of the transactions' execution to make sure that 1 + 2 + 3 rules guarantee that the reading transaction never sees the DB in an inconsistent state.</p>
+</div>
+<div class="paragraph">
+<p>So, if you have a read-only transaction, <code>REPEATABLE_READ</code> guarantees consistency.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_lost_update">Lost update</h3>
+<div class="paragraph">
+<p>What about writing transactions? So far in our examples, we considered that one transaction is writing and another one is reading. Now, let&#8217;s have both transactions changing the data.</p>
+</div>
+<div class="paragraph">
+<p>In our example, we have two transactions updating the same account in parallel. Each transaction reads the current amount and adds some value to it. The result of execution depends on the order, so we again have a race condition here. If the first transaction is fast enough then the second transaction will be able to read the amount written by the first transaction, and we have the expected result. The amount is a sum of two values added by two transactions. But if the second transaction was too fast and got the amount of the account before the first transaction changed it, then the second transaction overwrites what the first transaction has written. It&#8217;s demonstrated below:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    //given
+    final int userAccountId = 1;
+    transactionsWrapper.readCommitted(() -&gt; {
+      var account = new Account();
+      account.setAmount(0);
+      account.setId(userAccountId);
+      accountRepository.saveAndFlush(account);
+    });
+
+    //expected
+    var phaseSync = new PhaseSync();
+    var firstUserTransfer = 50;
+    runAsync(() -&gt;
+            transactionsWrapper.readCommitted(() -&gt; {
+              Integer currentAmount = accountRepository.findById(userAccountId).map(Account::getAmount).orElseThrow();
+              phaseSync.phase(Phases.FIRST, () -&gt; {
+                accountRepository.updateAmount(userAccountId, firstUserTransfer + currentAmount);
+              });
+            })
+            );
+
+    var secondUserTransfer = 30;
+    runAsync(() -&gt;
+            transactionsWrapper.readCommitted(() -&gt; {
+              Integer currentAmount = accountRepository.findById(userAccountId).map(Account::getAmount).orElseThrow();
+              phaseSync.phase(Phases.SECOND, () -&gt; {
+                accountRepository.updateAmount(userAccountId, secondUserTransfer + currentAmount);
+              });
+            })
+            );
+
+    phaseSync.phase(Phases.THIRD, () -&gt; {/* both transactions are done */});
+    assertThat(phaseSync.exceptionDetails(), phaseSync.noExceptions(), is(true));
+
+    Integer finalAmount = accountRepository.findById(userAccountId).map(Account::getAmount).orElseThrow();
+    assertThat(finalAmount, not(firstUserTransfer + secondUserTransfer));
+    assertThat(finalAmount, is(secondUserTransfer));</code></pre>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_to_fix_3">To fix</h4>
+<div class="paragraph">
+<p>The fix is to change the isolation level from <code>READ_COMMITED</code> to <code>REPEATABLE_READ</code>. In general, the lost update problem occurs when two parallel transactions read the same value, modify it, and write back, so one of the changes is not considered and overwritten. The Postgres implementation of <code>REPEATABLE_READ</code> uses MVCC to detect lost updates. If some transaction tries to update some raw having the latest version Tx and the version visible for the transaction is different from Tx, then the raw has been updated already. So, the transaction should be rolled back. In our example:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The account inserted with amount 0 and version T0</p>
+</li>
+<li>
+<p>The first transaction reads version T0</p>
+</li>
+<li>
+<p>The second transaction reads version T0</p>
+</li>
+<li>
+<p>The first transaction updates the account with the new value. The version that the transaction has read is T0 and the current version is T0, so the update is allowed. There are two versions of the account T0 and T1 now.</p>
+</li>
+<li>
+<p>The second transaction tries to update the account. It has version T0 and the latest version of the account is T1. The lost update is detected. The second transaction is rolled back.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_optimistic_vs_pessimistic_locking">Optimistic vs Pessimistic locking</h4>
+<div class="paragraph">
+<p>Try to change the test&#8217;s annotation from <code>@PostgresTest</code> to <code>@MySqlTest</code>. The fix doesn&#8217;t work anymore. Why? MySQL&#8217;s way of preventing lost updates is different. Instead of allowing concurrent transactions to try to read/modify/update the same data and be failed on update in case any problems are detected, MySQL allows users to prevent concurrent reads of the same data. Before reading the data a transaction could try to acquire a lock and if the lock is acquired, all other transactions are blocked on the same lock acquiring attempt. The lock is released when the transaction holding the lock is committed, so another one is awakened to acquire the lock.</p>
+</div>
+<div class="paragraph">
+<p>To acquire the lock preventing the lost update a transaction should perform <code>select for update</code>. In our case instead of</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sql" data-lang="sql">select * from account where id = 1;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>we should run</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sql" data-lang="sql">select * from account where id = 1 for update;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>So, the database takes a lock on all rows returned by this query, and the lock is released only when the transaction holding the lock is committed. Since both transactions execute this select command at the beginning, one transaction waits until another one is done.</p>
+</div>
+<div class="paragraph">
+<p>Unfortunately, those details are hidden behind the Spring JPA abstractions. I didn&#8217;t find a way to force it to execute the select for update. If you know a way please comment about it.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_phantom_read">Phantom Read</h3>
+<div class="paragraph">
+<p>Is <code>REPEATABLE_READ</code> level a guarantee that the transaction will never bring the system into an inconsistent state? Nope, there are still cases.</p>
+</div>
+<div class="paragraph">
+<p>Imagine that we have a system managing 3 ATMs. The ATMs are connected to each other and there is no primary host managing the system. Each ATM has its own copy of all users and their accounts and can decide if is it ok to allow withdrawing money for some particular user or not. As soon as the user received some money from some ATM, the ATM let others know about the update, so they update their own copies of the user accounts.</p>
+</div>
+<div class="paragraph">
+<p>Now, let&#8217;s say that one of the ATMs lost connection to other ATMs and some user wants to withdraw some money. Should we allow them to do that? The ATM is not connected to other ATMs, so there is no way to know if this user already got some money from other ATMs. The user can abuse the system by withdrawing all their money from ATMs that are online and then withdrawing the same money again from an ATM that has temporarily lost connection, so it&#8217;s not aware of any account changes. On the other hand, we try to serve our users the best we can. It would be great to let them receive their money even if the ATM is offline.</p>
+</div>
+<div class="paragraph">
+<p>This problem is a great introduction to distributed systems issues, which we will certainly dive into in one of the next posts.</p>
+</div>
+<div class="paragraph">
+<p>Try to find your own solution and only after that continue reading.</p>
+</div>
+<div class="paragraph">
+<p>This problem is called split brain. To make a decision each part of the system has to be connected to the system. But what to do if the connection is lost? In our case, we can&#8217;t allow users to withdraw all money from all accounts because of the above reasons. But we could program ATMs to allow withdrawing an amount of money less or equal to the sum of the money of all accounts divided by the number of ATMs (3 in our example) in case of split-brain. So, if a user having 90 dollars try to get 30 dollars, and the ATM sees that some ATMs are not in the network, it&#8217;s safe to let the user withdraw this money if the ATM knows that all other ATMs are also following this rule. In the worst case, all 3 ATMs are out of the network. Even if some user is trying to abuse the system and visits all 3 ATMs this user can only withdraw 90 dollars from all ATMs which is completely ok.</p>
+</div>
+<div class="paragraph">
+<p>You could argue that it&#8217;s not very practical. In real life, there are more than 3 ATMs and after some number of ATMs, this solution doesn&#8217;t work anymore (the amount of money allowed to withdraw is too low). But actually, the same approach can be used in real life. Imagine, for example, that you&#8217;re designing a system that should work on different continents. So, instead of ATMs, you have instances of the system located in some continent. The connection between the instances of the system could be slow because of the distances. You can improve the performance of the whole system significantly if you allow withdrawing money without communicating with other parts of the system located in other continents if the requested amount of money is less than the whole amount of money on all accounts divided by the number of instances of the system.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s try to implement a code that checks for the constraint. It fetches all user accounts from the database and allows withdrawing only when the sum is greater or equal to 3x of the requested amount. Say, that some user has two accounts. Now, imagine that two similar transactions are withdrawing money in parallel, but the first transaction charges the first account and the second transaction withdraws some money from the second account. It&#8217;s very similar to the lost update situation. The only exception is that now different rows are modified but both rows are used to check the constraint. It means that there is a case when one of the transactions is committed and another one uses the stale data to check the constraint, it decided that the change is allowed, and based on this decision changes the data making it inconsistent. The change can&#8217;t be prevented by <code>REPEATABLE_READ</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">    //given
+    final var amountToTransfer = 30;
+    final var firstAccountInitialAmount = 40;
+    final var secondAccountInitialAmount = 50;
+
+    var user = new User();
+    user.setUserName("someName");
+    var account1 = new Account();
+    account1.setId(1);
+    account1.setUser(user);
+    account1.setAmount(firstAccountInitialAmount);
+    var account2 = new Account();
+    account2.setId(2);
+    account2.setAmount(secondAccountInitialAmount);
+    account2.setUser(user);
+    user.setAccounts(List.of(account1, account2));
+    userRepository.saveAndFlush(user);
+
+
+    //expect
+    PhaseSync phaseSync = new PhaseSync();
+
+    runAsync(() -&gt; {
+      transactionsWrapper.repeatableRead(() -&gt; {
+        AtomicBoolean isWithdrawAllowed = new AtomicBoolean(false);
+        phaseSync.phase(Phases.FIRST, () -&gt;
+            isWithdrawAllowed.compareAndSet(false, allowedToWithdraw(amountToTransfer)));
+        if (isWithdrawAllowed.get()) {
+          phaseSync.phase(Phases.THIRD, () -&gt; withdraw(amountToTransfer, 1));
+        }
+      });
+      phaseSync.phase(Phases.FOURTH, () -&gt; {/* transaction is commited */});
+    });
+
+    runAsync(() -&gt; {
+      transactionsWrapper.repeatableRead(() -&gt; {
+        AtomicBoolean isWithdrawAllowed = new AtomicBoolean(false);
+        phaseSync.phase(Phases.SECOND, () -&gt;
+            isWithdrawAllowed.compareAndSet(false, allowedToWithdraw(amountToTransfer)));
+        if (isWithdrawAllowed.get()) {
+          phaseSync.phase(Phases.FIFTH, () -&gt; withdraw(amountToTransfer, 2));
+        }
+      });
+    });
+    phaseSync.phase(Phases.SIXTH, () -&gt; {/*done with all phases*/});
+    assertThat(phaseSync.noExceptions(), is(true));
+    // the constraint is violated
+    assertThat(accountRepository.findAll().stream().mapToInt(Account::getAmount).sum(), is(30));</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Please notice, that the only difference between the transactions is the account id they withdraw. Since the first transaction changes the first account and the second one changes the second account the MVCC rules can&#8217;t detect the inconsistent write because different records are changed, so both transactions have the latest versions of the corresponding records. It&#8217;s not the lost update situation.</p>
+</div>
+<div class="sect3">
+<h4 id="_how_to_fix_ssi">How to fix? SSI</h4>
+<div class="paragraph">
+<p>The fix is to use the strongest level called <code>SERIALIZABLE</code>. Basically, it&#8217;s MVCC + additional checks on the write operations. MVCC allows isolating transactions from the reading point of view. So each transaction has its own snapshot of the database and no parallel changes are visible for the transaction. The additional checks allow isolating transactions from the writing point of view. So, it guarantees that if a transaction makes consistent changes running individually then it&#8217;s correct in case of running in parallel with any other transactions.</p>
+</div>
+<div class="paragraph">
+<p>How do the checks work? When a transaction attempts to commit DB checks that all versions of all fetched rows are still the latest. So between any read and the transaction&#8217;s commit, no other transactions committed a new version of the rows that the current transaction has read. In other words, no writes are ignored because of the MVCC rules. If the checks are passed the transaction is allowed to be committed. If not, it&#8217;s rolled back.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_two_phase_locking">Two phase locking</h4>
+<div class="paragraph">
+<p>SSI is optimistic locking. Change the test&#8217;s annotation from <code>@PostgresTest</code> to <code>@MySqlTest</code> and you&#8217;ll get the pessimistic locking implementation of the <code>SERIALIZABLE</code> level. How does it work? In the previous blog post, we discussed a <a href="https://konoplev.me/en/programming/post/thread_racing.html#_dirty_read">solution</a> that doesn&#8217;t require all reading threads to wait for each other, but they always read consistent data even if the data is multiple fields that are modified by parallel threads. The solution is called _two phase locking_. Imagine that each row has two locks <code>read</code> and <code>write</code>. The locks are depends on each other. The read lock is not exclusive. Multiple transactions can acquire it. So, reading threads don’t need to wait for each other. But if the write lock is acquired then the read lock can&#8217;t be acquired immediately and each reader should wait until the write lock is released. This is how we make all readers wait until the write is done. Also, the write lock can’t be acquired until all read locks are released. So the update is waiting for all readers to finish (otherwise they could read an inconsistent update). Are <a href="https://konoplev.me/en/programming/post/thread_racing.html#_deadlock">deadlocks</a> possible? Sure, but DB can resolve them. If DB sees that transaction A tries to acquire a write lock that transaction B is holding and A holds a lock that B is waiting for, then one of the transactions is aborted, so another one can proceed. So, this is pessimistic locking.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_optimistic_vs_pessimistic_locking_2">Optimistic vs pessimistic locking</h4>
+<div class="paragraph">
+<p>To handle locks properly you need to catch exceptions (and retry in case of a problem). In the case of optimistic locking, the exception will be thrown when a transaction used stale data. In the case of pessimistic locking, the exception is thrown in case of timeout or deadlock. To use pessimistic locks, sometimes you need to request lock acquisition explicitly ("select for update").</p>
+</div>
+<div class="paragraph">
+<p>Optimistic locking is beneficial when there are not many contentions, so transactions are independent and read/write different rows. The more conflicts you have the more costly the rollbacks. At some point, it&#8217;s better to be pessimistic and order transactions (using locks) to avoid rollbacks.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_summary">Summary</h3>
+<div class="paragraph">
+<p>In all examples, we had two transactions A and B.</p>
+</div>
+<div class="paragraph">
+<p>Reading issues: Transaction A reads row 1 and row 2, and transaction B changes row 1 and row 2. The rows should be updated atomically (both are changed or both are not changed).</p>
+</div>
+<div class="paragraph">
+<p><code>Dirty read</code> is when transaction A reads row 1 changed by B and then B is rolled back. So, A has data that shouldn&#8217;t be visible. <strong>To fix</strong>: transaction A should have <code>READ_COMMITED</code> level. The issue is not possible in Postgres since <code>READ_UNCOMMITED</code> is actually <code>READ_COMMITED</code>.</p>
+</div>
+<div class="paragraph">
+<p><code>Non repeatable read</code>: A reads row 1 then B changes row 1, row 2 and commits, then A reads row 2. From A&#8217;s point of view row 1 and row 2 are inconsistent (it has stolen version of 1). <strong>To fix</strong>: transaction A should have <code>REPEATABLE_READ</code> level.</p>
+</div>
+<div class="paragraph">
+<p>Writing issues:</p>
+</div>
+<div class="paragraph">
+<p><code>Lost update</code>: Transaction A reads row 1 and based on the value updates it, in parallel Transaction B reads the same row and based on the value also update it. Transaction B overrides transaction&#8217;s A update. <strong>To fix</strong>: both transactions should have <code>REPEATABLE_READ</code> level in the case of Postgres or should use "select for update" in the case of MySQL.</p>
+</div>
+<div class="paragraph">
+<p><code>Phantom read</code>: Both transactions read row 1 and row 2. Based on both values they make a decision. Transaction A updates row 1, and Transaction B updates row 2 based on the decision. After transaction A is committed, the data used by transaction B is no longer valid, so transaction&#8217;s B decision is invalid, and as soon as transaction&#8217;s B change is committed the data is inconsistent. <strong>To fix</strong>: both transactions should have <code>SERIALIZABLE</code> level.</p>
+</div>
+<div class="paragraph">
+<p>As you probably noticed, some database implementation details could be crucial. So, it&#8217;s important to know at least if is it optimistic or pessimistic locking and what is guaranteed by each isolation level.</p>
+</div>
+</div>
+</div>
+</div>
+                    </div>
+                    <div class="height-40px"></div>
+                    <div>
+                        <h4 class="text-center">Receive new posts to your email</h4>
+                        <div class="height-15px"></div>
+                        <ul class="social">
+                            <iframe src="https://konoplev.substack.com/embed" width="380" height="120" style="border:1px solid #EEE; background:white;" frameborder="0" scrolling="no"></iframe>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-center">Liked the post? Share it!</h4>
+                        <div class="height-15px"></div>
+                        <ul class="social">
+                            <li class="facebook">
+                                <a href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Fkonoplev.me&t="
+                                   target="_blank" title="Share on Facebook"
+                                   onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(document.URL)); return false;">
+                                    <span class="ion-social-facebook"></span>
+                                </a>
+                            </li>
+                            <li class="twitter">
+                                <a href="https://twitter.com/intent/tweet?source=http%3A%2F%2Fkonoplev.me&text=:%20http%3A%2F%2Fkonoplev.me"
+                                   target="_blank" title="Tweet"
+                                   onclick="window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(document.title) + ':%20' + encodeURIComponent(document.URL)); return false;">
+                                    <span class="ion-social-twitter"></span>
+                                </a>
+                            </li>
+                            <li class="pinterest">
+                                <a href="http://pinterest.com/pin/create/button/?url=http%3A%2F%2Fkonoplev.me&description="
+                                   target="_blank" title="Pin it"
+                                   onclick="window.open('http://pinterest.com/pin/create/button/?url=' + encodeURIComponent(document.URL) + '&description=' +  encodeURIComponent(document.title)); return false;">
+                                    <span class="ion-social-pinterest"></span>
+                                </a>
+                            </li>
+                            <li class="reddit">
+                                <a href="http://www.reddit.com/submit?url=http%3A%2F%2Fkonoplev.me&title="
+                                   target="_blank" title="Submit to Reddit"
+                                   onclick="window.open('http://www.reddit.com/submit?url=' + encodeURIComponent(document.URL) + '&title=' +  encodeURIComponent(document.title)); return false;">
+                                    <span class="ion-social-reddit"></span>
+                                </a>
+                            </li>
+                            <li class="linkedin">
+                                <a href="http://www.linkedin.com/shareArticle?mini=true&url=http%3A%2F%2Fkonoplev.me&title=&summary=&source=http%3A%2F%2Fkonoplev.me"
+                                   target="_blank" title="Share on LinkedIn"
+                                   onclick="window.open('http://www.linkedin.com/shareArticle?mini=true&url=' + encodeURIComponent(document.URL) + '&title=' +  encodeURIComponent(document.title)); return false;">
+                                    <span class="ion-social-linkedin"></span>
+                                </a>
+                            </li>
+                            <li class="email-icon">
+                                <a href="mailto:?subject=&body=:%20http%3A%2F%2Fkonoplev.me"
+                                   target="_blank" title="Email"
+                                   onclick="window.open('mailto:?subject=' + encodeURIComponent(document.title) + '&body=' +  encodeURIComponent(document.URL)); return false;">
+                                    <span class="ion-email"></span>
+                                </a>
+                            </li>
+                        </ul>
+
+                    </div>
+                    <div>
+                        <div id="remark42" aria-live="polite">
+                            <noscript>Please enable JavaScript to view the comments</noscript>
+                        </div>
+                    </div>
+                </article>
+
+            </main>
+        </div>
+    </div>
+</div>
+
+<script>
+    var remark_config = {
+        host: "https://comments.konoplev.me",
+        site_id: 'konoplev',
+    };
+
+    (function (c) {
+        for (var i = 0; i < c.length; i++) {
+            var d = document, s = d.createElement('script');
+            s.src = remark_config.host + '/web/' + c[i] + '.js';
+            s.defer = true;
+            (d.head || d.body).appendChild(s);
+        }
+    })(remark_config.components || ['embed']);
+    hljs.highlightAll();
+</script>
+
+    <footer id="site-footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <p class="copyright">&copy; 2022 Alexander Konoplev</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Mobile Menu -->
+<div class="overlay overlay-hugeinc">
+    <button type="button" class="overlay-close"><span class="ion-ios-close-empty"></span></button>
+    <nav>
+        <ul>
+            <li><a href="../../../index.html">About</a></li>
+            <li><a href="../../../en/thoughts/index/1.html">Thoughts</a></li>
+            <li><a href="../../../en/programming/index/1.html">Programming</a></li>
+        </ul>
+    </nav>
+</div>
+
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript" >
+  (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+  (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+  ym(55474030, "init", {
+    clickmap:true,
+    trackLinks:true,
+    accurateTrackBounce:true,
+    webvisor:true
+  });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/55474030" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+
+
+<!-- /Yandex.Metrika counter -->
+
+<script src="../../../js/script.js"></script>
+
+</body>
+</html>
