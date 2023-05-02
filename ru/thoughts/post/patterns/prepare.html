@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>
+      Digital Logic Gates on Conway's Game of Life - Part 1
+    </title>
+    <meta content="Abstract: This post walks through how to construct digital logic gates (AND/OR/NOT) on top of Conway's Game of Life, demonstrating its Turing completeness." name="description" />
+    <script defer="defer" src="gameoflife/replay.js">/**/</script>
+    <script defer="defer" src="gameoflife/tree.js">/**/</script>
+    <script defer="defer" src="gameoflife/circs.js">/**/</script>
+    <style>
+      .circuit {
+      border: 1px solid #000;
+      margin: .5em;
+      padding: 3px;
+      width: 540px;
+      height: 570px;
+      border-radius: 3px;
+      position: relative;
+      }
+      .header { clear: both; }
+      .circuit canvas {
+      background: #fff;
+      }
+      @media all and (max-width: 40em) {
+		  .circuit {
+			  width: 100%;
+		  }
+		  canvas {
+			  width: 100%;
+		  }
+		  pre {
+			  width: 100%;
+			  overflow: scroll;
+		  }
+	  }
+    </style>
+    <link href="/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  </head>
+  <body>
+    <div><div class="circuit" kind="blinker">&nbsp;</div></div>
+  </body>
+</html>
