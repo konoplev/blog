@@ -89,11 +89,7 @@
                                                 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Complexity has long been a fascination of mine.
-One of the greatest pleasures in life is the moment when something incomprehensible just a second ago suddenly becomes clear.
-People tend to avoid complexity.
-In this post, I will attempt to demonstrate why complexity is one of the most intriguing aspects of life.
-And I will try to write about complexity simply.</p>
+<p>As more opportunities arise in the world around us, it becomes increasingly complex. We often find ourselves so overwhelmed by the growing influx of information that we try to avoid complexity. At the same time, for many people, one of the most enjoyable experiences is when something completely incomprehensible just a second ago suddenly becomes clear. Drawing on scientific research, the concept of emptiness in Buddhism, and observations of the infinite diversity of the world, we will dive into the beauty of complexity using thought-provoking analogies. By examining its role in our lives and its influence on our understanding of the universe, we can better recognize the deep interconnectedness of the world around us. And I will try to write about complexity simply.</p>
 </div>
 </div>
 </div>
@@ -298,7 +294,7 @@ In this case, the simple properties and behavior of individual ants would not pr
 <p>In the same notes, Leonardo continued: "All the branches of a water [course] at every stage of its course, if they are of equal rapidity, are equal to the body of the main stream."</p>
 </div>
 <div class="paragraph">
-<p>Surprisingly, these ideas didn&#8217;t receive much development until the mid-20th century, and such objects didn&#8217;t even have a name. Mathematician Benoît Mandelbrot noticed and began studying them. He called his discovery <em>fractals</em>. A fractal is a geometric object that possesses the property of self-similarity, meaning its parts replicate the shape of the whole object at different levels of scale. Fractals are often used to describe complex forms that cannot be represented by simple geometric shapes, such as lines, circles, or rectangles. Once you see fractals, you&#8217;ll start noticing them everywhere.</p>
+<p>Surprisingly, these ideas didn&#8217;t receive much development until the mid-20th century, and such objects didn&#8217;t even have a name. Mathematician Benoît Mandelbrot noticed and began studying them. He called his discovery <em>fractals</em>. A fractal is a geometric object that possesses the property of self-similarity, meaning its parts replicate the shape of the whole object at different levels of scale. Fractals are often used to describe complex forms that cannot be represented by simple geometric shapes, such as lines, circles, or rectangles. Once you see fractals, you&#8217;ll start noticing them everywhere. Tree branches and lightning, snowflakes and frost on the window, river deltas and human lungs, mountain ranges and clouds.</p>
 </div>
 <div class="paragraph">
 <p>I wrote a small program that constructs a tree. Let&#8217;s run it to understand how fractals emerge.</p>
@@ -415,7 +411,7 @@ In this case, the simple properties and behavior of individual ants would not pr
 <p>To better understand complexity and how it can be modeled, let&#8217;s look at a famous model called "The Game of Life." It was invented by English mathematician John Conway in 1970.</p>
 </div>
 <div class="paragraph">
-<p>On a two-dimensional grid representing cells, each cell can be in one of two states: "alive" or "dead." The transition between states depends on the state of neighboring cells.</p>
+<p>On a two-dimensional grid, each cell can be in one of two states: "alive" or "dead." The transition between states depends on the state of neighboring cells.</p>
 </div>
 <div class="paragraph">
 <p>The rules of the Game of Life are simple and based on the following principles:</p>
@@ -423,7 +419,7 @@ In this case, the simple properties and behavior of individual ants would not pr
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Survival. Each cell with two or three neighboring live cells survives and moves on to the next generation.</p>
+<p>Survival. Each cell with two or three neighboring live cells survives.</p>
 </li>
 <li>
 <p>Death. Each cell with more than three live neighbors dies due to overpopulation. Each cell surrounded by empty neighboring cells or only one occupied cell dies from loneliness.</p>
@@ -503,7 +499,7 @@ If this surprised you, then you have experienced the sensations that researchers
 The spread of fires, rumors, epidemics, cancer cells, corrosion in metals, traffic jams on roads, self-organization of patterns in nature (e.g., patterns on mollusk shells and butterfly wings) and in societies, modeling climate change and temperature anomalies, and urban infrastructure development.</p>
 </div>
 <div class="paragraph">
-<p>New and interesting patterns were found. Here, for example, is a glider:</p>
+<p>New and interesting patterns were found. Here, for example, is a Glider:</p>
 </div>
 <div class="imageblock">
 <div class="content">
@@ -514,11 +510,15 @@ The spread of fires, rumors, epidemics, cancer cells, corrosion in metals, traff
 <p>A pattern that, after several steps, reproduces itself, but in a new place, and thus moves across the field.</p>
 </div>
 <div class="paragraph">
-<p>The creator of the game assumed that the number of cells is always limited, it cannot grow infinitely and even offered a prize to whoever disproves this hypothesis.
+<p>In all the experiments John Conway observed, cell populations either completely vanished or stabilized without further changes. There is also the Rule 2, according to which cells die due to overpopulation. Based on this, he hypothesized that the number of alive cells is always limited. Conway believed that the number of alive cells could not grow indefinitely. He even offered a prize to anyone who could disprove his hypothesis.
 Soon he paid the prize.
 A group from MIT came up with a gun that shoots gliders (Gospers glider gun).</p>
 </div>
-<div><div class="circuit" kind="gun">&nbsp;</div></div>
+<div class="imageblock">
+<div class="content">
+<img src="Gospers_glider_gun.gif" alt="Gospers glider gun">
+</div>
+</div>
 <div class="paragraph">
 <p>Since the number of gliders coming out of the gun is infinite, the number of cells will also grow infinitely.</p>
 </div>
@@ -527,8 +527,13 @@ A group from MIT came up with a gun that shoots gliders (Gospers glider gun).</p
 </div>
 <div class="paragraph">
 <p>And you may have noticed that we think less and less in terms of cells and more and more in terms of patterns in which cells are arranged.
-From the level of cell interaction, we have risen to a new level of abstraction - the interaction of patterns.
-For example, Gosper&#8217;s gun, shooting gliders, can transmit information from one part of the field to another.
+From the level of cell interaction, we have risen to a new level of abstraction - the interaction of patterns.</p>
+</div>
+<div class="paragraph">
+<p>I can&#8217;t help but delve a bit deeper into this topic. For those not familiar with programming or mathematics, it may seem somewhat complex or overly abstract. In that case, feel free to skip ahead to the next section, <a href="#Infinite Games">[Infinite Games]</a>.</p>
+</div>
+<div class="paragraph">
+<p>Moving from the cellular level to the level of patterns, we notice that Gosper&#8217;s Glider Gun, by shooting gliders, can transmit information from one part of the field to another.
 Colliding, gliders neutralize each other, so the signal can be "turned off".</p>
 </div>
 <div><div class="circuit" kind="collide1">&nbsp;</div></div>
@@ -544,15 +549,12 @@ For example, if the position of each bit is a power of 2, then a group of three 
 Using Gosper&#8217;s guns, you can perform <a href="https://nicholas.carlini.com/writing/2020/digital-logic-game-of-life.html">logical operations in the Game of Life</a>.
 From logical operations, you can build chains and create any programs.
 For example, a calculator that performs calculations on numbers encoded in cells.
-Thus, a game based on three simple rules turns into a computing machine on which you can program anything you want.</p>
+Thus, a game based on three simple rules turns into a computing machine on which you can program anything you want. This is yet another example of emergence.</p>
 </div>
 <div><div class="circuit" kind="_clock">&nbsp;</div></div>
 </div>
 <div class="sect3">
 <h4 id="_infinite_games">Infinite games</h4>
-<div class="paragraph">
-<p>If the fact that the Game of Life is a fully-fledged computing machine is not yet impressive, let&#8217;s look at another example.</p>
-</div>
 <div class="paragraph">
 <p>In 2006, the pattern OTCA metapixel was published. It occupies 2048x2048 cells and is a meta-cell.
 That is, it is a cell made up of cells.</p>
@@ -574,7 +576,7 @@ That is, it is a cell made up of cells.</p>
 <p>Meta-cells can communicate with each other whether they are on or off by sending gliders.
 Each meta-cell implements the same three rules that cells operate by on the lower level.
 For example, a turned-off meta-cell that receives gliders from exactly three turned-on meta-cells will turn on, thus implementing rule 3 at the meta-level.
-So, from meta-cells, you can organize the same patterns as from cells at the lower level. Here, for example, is a blinker made up of meta-cells:</p>
+So, on a grid created by meta-cells, you can organize the same patterns as from cells at the lower level. Here, for example, is a blinker made up of meta-cells:</p>
 </div>
 <div class="imageblock">
 <div class="content">
@@ -623,8 +625,8 @@ If you plant an acorn in the ground, and an oak tree grows from it, at what poin
 Can we draw clear boundaries?</p>
 </div>
 <div class="paragraph">
-<p>In the "Heart Sutra of Perfect Wisdom" (Prajñāpāramitā Hridaya Sūtra), it is said, "Form is emptiness, emptiness is form. Form is not separate from emptiness, emptiness is not separate from form."
-And further, "No eye, no ear, no nose, no tongue, no body, no mind."
+<p>In "The Heart Sutra" (Prajñāpāramitā Hridaya Sūtra), it is said, "Form is emptiness, emptiness is form. Form is not separate from emptiness, emptiness is not separate from form."
+And further, "There are no eyes, no ears, no nose, no tongue, no body, no mind".
 I&#8217;ve long tried to understand what Buddhists mean when they talk about emptiness.
 Does it mean that the world only seems to be there, and nothing actually exists?</p>
 </div>
@@ -641,8 +643,8 @@ This is an infinite transformation in which everything is connected to everythin
 </div>
 <div class="paragraph">
 <p>Mathematician Edward Lorenz, who worked on the mathematical model of global climate, introduced the concept of the "butterfly effect."
-"A butterfly flapping its wings in Iowa can cause a cascade of effects that can reach its peak in the rainy season in Indonesia," just as it affected the events unfolding in Bradbury&#8217;s story "A Sound of Thunder."
-The flutter of a butterfly&#8217;s wings on one side of the Earth leads to significant changes in weather on the other side.</p>
+A term that grew out of an academic paper he presented in 1972 entitled: "Predictability: Does the Flap of a Butterfly&#8217;s Wings in Brazil Set Off a Tornado in Texas?"
+Having built his model, he discovered that long-term weather forecasting is extremely sensitive to the slightest disturbances. A butterfly&#8217;s flight can change the state of the atmosphere and future weather, just as it influenced the events unfolding in Bradbury&#8217;s story "A Sound of Thunder".</p>
 </div>
 <div class="paragraph">
 <p>In the same way, all the cells in the Game of Life are connected.
@@ -652,13 +654,7 @@ Move one cell and get a "П" instead of an "H," and the system behaves entirely 
 Everything depends on everything.</p>
 </div>
 <div class="paragraph">
-<p>Since any object in the world consists of parts, any object depends on its parts.
-Everything is part of something else.
-The upper level on our infinite Game of Life field made up of metapixels depends on the lower one because a meta cell consists of other cells.
-So everything in the world is a temporary collection of parts that will eventually disintegrate to reassemble into another collection.
-Just as turning on and off cells create patterns that, in turn, make up other cells, which in turn form patterns, and so on.
-There is nothing that exists in isolation, and there is nothing that would exist forever.
-All that we see is only a temporary collection of parts, like pebbles thrown into the air for a moment, forming a certain pattern.</p>
+<p>And since every object in the world is composed of parts, any object depends on its parts. Everything is part of something else. The higher level on our infinite Game of Life field made up of metapixels depends on the lower one, because a metacell consists of cells at a lower level. Thus, everything in the world is a temporary aggregation of parts that will eventually disintegrate to reassemble into another aggregation. Just as turning on and off cells form patterns that make up metacells, which create a grid at a higher level, cells on this grid turn on and off, forming patterns that create a grid for the next level. There is nothing that exists in isolation, and there is nothing that exists forever. Everything we see is just a temporary collection of parts, like pebbles tossed into the air for a moment to form a certain pattern.</p>
 </div>
 <div class="paragraph">
 <p>In this way, by drawing analogies, we can look at the familiar world in a new way using the Game of Life.
@@ -682,12 +678,12 @@ And now you are both no longer lonely.</p>
 <div class="paragraph">
 <p>An analogy cannot be proof of anything.
 The fact that the two things are similar does not yet say anything.
-For example, the brain resembles a walnut, and it is unlikely to mean anything.
+For example, the shape of the brain resembles a walnut, and it is unlikely to mean anything.
 But sometimes an analogy helps to look at things in a new way.
-From an analogy, a theory can be born.
+From an analogy, a hypothesis can be born.
 If things are similar, maybe they work the same way.
-The theory still needs to be tested.
-But having a theory is already a significant step in advancing understanding.</p>
+The hypothesis still needs to be tested.
+However, having a hypothesis is already a significant step toward understanding.</p>
 </div>
 <div class="paragraph">
 <p>In the Game of Life, we see an infinite universe that operates on three simple rules.
@@ -741,7 +737,7 @@ Surprisingly, no one noticed this until the mid-20th century.</p>
 <div class="paragraph">
 <p>The struggle with complexity can be so engrossing that one can confuse abstraction with lossless compression.
 Or confuse analogy with abstraction.
-We may forget that our ultimate goal is not to build a coherent theory but to predict how the world works.
+We may forget that our ultimate goal is not to build a coherent theory but to predict how the world works. The theory can be very elegant and well-structured, but if there are details that contradict it, they must be taken into account.
 In the end, we are fighting entropy, not complexity.</p>
 </div>
 <div class="sect3">
