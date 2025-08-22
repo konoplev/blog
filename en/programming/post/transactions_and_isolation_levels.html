@@ -6,13 +6,13 @@
     <!-- meta -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta property="og:title" content="Transactions and isolation levels" />
+    <meta property="og:title" content="Transactions and isolation levels"/>
     <meta property="og:description" content="The main problem with relational databases is that any developer implementing an application executing SQL queries should understand how DB works under the hood, why and when to start transactions, and what's the difference between isolation levels. So, that's not enough to just know SQL or some ORM. Read this post if you're not sure what are the proper answers to the above questions. Also, we will discuss some differences between relational database implementations. You'll see, for example, that `REPEATABLE_READ` and `READ_UNCOMMITED` work differently in MySQL and Postgress. The discussion is very practical. There are lots of examples. For instance, we not just talk about pessimistic and optimistic locking but also when it's crucial for your application. I hope this post will clarify all questions that you had about transactions.
-" />
-    <meta property="og:image" content="https://konoplev.me/en/programming/post/transactions_and_isolation_levels.jpg" />
-    <meta property="og:url" content="https://konoplev.me/en/programming/post/transactions_and_isolation_levels.html" />
-    <meta property="og:type" content="article" />
-    <meta property="og:site_name" content="Konoplev's blog" />
+"/>
+    <meta property="og:image" content="https://konoplev.me/en/programming/post/transactions_and_isolation_levels.jpg"/>
+    <meta property="og:url" content="https://konoplev.me/en/programming/post/transactions_and_isolation_levels.html"/>
+    <meta property="og:type" content="article"/>
+    <meta property="og:site_name" content="Konoplev's blog"/>
 
     <!-- css -->
     <link rel="stylesheet" href="../../../css/bootstrap.min.css">
@@ -852,7 +852,9 @@ Here is what happens next:</p>
                         <h4 class="text-center">Receive new posts to your email</h4>
                         <div class="height-15px"></div>
                         <ul class="social">
-                            <iframe src="https://konoplev.substack.com/embed" width="380" height="120" style="border:1px solid #EEE; background:white;" frameborder="0" scrolling="no"></iframe>
+                            <iframe src="https://konoplev.substack.com/embed" width="380" height="120"
+                                    style="border:1px solid #EEE; background:white;" frameborder="0"
+                                    scrolling="no"></iframe>
                         </ul>
                     </div>
                     <div>
@@ -860,32 +862,38 @@ Here is what happens next:</p>
                         <div class="height-15px"></div>
                         <ul class="social">
                             <li class="facebook">
-                                <a href="#" target="_blank" title="Share on Facebook" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(document.URL)); return false;">
+                                <a href="#" target="_blank" title="Share on Facebook"
+                                   onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(document.URL)); return false;">
                                     <span class="ion-social-facebook"></span>
                                 </a>
                             </li>
                             <li class="twitter">
-                                <a href="#" target="_blank" title="Tweet" onclick="window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(document.title) + ':%20' + encodeURIComponent(document.URL)); return false;">
+                                <a href="#" target="_blank" title="Tweet"
+                                   onclick="window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(document.title) + ':%20' + encodeURIComponent(document.URL)); return false;">
                                     <span class="ion-social-twitter"></span>
                                 </a>
                             </li>
                             <li class="pinterest">
-                                <a href="#" target="_blank" title="Pin it" onclick="window.open('http://pinterest.com/pin/create/button/?url=' + encodeURIComponent(document.URL) + '&description=' + encodeURIComponent(document.title)); return false;">
+                                <a href="#" target="_blank" title="Pin it"
+                                   onclick="window.open('http://pinterest.com/pin/create/button/?url=' + encodeURIComponent(document.URL) + '&description=' + encodeURIComponent(document.title)); return false;">
                                     <span class="ion-social-pinterest"></span>
                                 </a>
                             </li>
                             <li class="reddit">
-                                <a href="#" target="_blank" title="Submit to Reddit" onclick="window.open('http://www.reddit.com/submit?url=' + encodeURIComponent(document.URL) + '&title=' + encodeURIComponent(document.title)); return false;">
+                                <a href="#" target="_blank" title="Submit to Reddit"
+                                   onclick="window.open('http://www.reddit.com/submit?url=' + encodeURIComponent(document.URL) + '&title=' + encodeURIComponent(document.title)); return false;">
                                     <span class="ion-social-reddit"></span>
                                 </a>
                             </li>
                             <li class="linkedin">
-                                <a href="#" target="_blank" title="Share on LinkedIn" onclick="window.open('http://www.linkedin.com/shareArticle?mini=true&url=' + encodeURIComponent(document.URL) + '&title=' + encodeURIComponent(document.title)); return false;">
+                                <a href="#" target="_blank" title="Share on LinkedIn"
+                                   onclick="window.open('http://www.linkedin.com/shareArticle?mini=true&url=' + encodeURIComponent(document.URL) + '&title=' + encodeURIComponent(document.title)); return false;">
                                     <span class="ion-social-linkedin"></span>
                                 </a>
                             </li>
                             <li class="email-icon">
-                                <a href="#" target="_blank" title="Email" onclick="window.open('mailto:?subject=' + encodeURIComponent(document.title) + '&body=' + encodeURIComponent(document.URL)); return false;">
+                                <a href="#" target="_blank" title="Email"
+                                   onclick="window.open('mailto:?subject=' + encodeURIComponent(document.title) + '&body=' + encodeURIComponent(document.URL)); return false;">
                                     <span class="ion-email"></span>
                                 </a>
                             </li>
@@ -907,6 +915,7 @@ Here is what happens next:</p>
     var remark_config = {
         host: "https://comments.konoplev.me",
         site_id: 'konoplev',
+        locale: 'en'
     };
 
     (function (c) {
@@ -924,7 +933,9 @@ Here is what happens next:</p>
     <div class="container">
         <div class="row">
             <div class="col-md-12">
-                <p class="copyright">&copy; 2023 Alexander Konoplev</p>
+                <p class="copyright">
+                    &copy; <script>document.write(new Date().getFullYear());</script> Alexander Konoplev
+                </p>
             </div>
         </div>
     </div>
