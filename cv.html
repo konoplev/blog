@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alexander Konoplev - CV</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #fff;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20mm;
+            font-size: 11pt;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .name {
+            font-size: 24pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .contact-info {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .contact-info a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+
+        .summary a {
+            color: #0066cc;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .summary a:hover {
+            text-decoration: underline;
+        }
+
+        .summary {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .summary-left {
+            flex: 3;
+        }
+
+        .summary-right {
+            flex: 3;
+            margin-left: -10px;
+        }
+
+        .summary ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .summary li {
+            margin-bottom: 8px;
+            position: relative;
+            padding-left: 15px;
+        }
+
+        .summary li:before {
+            content: "●";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .section-title {
+            font-size: 13pt;
+            font-weight: bold;
+            margin: 25px 0 15px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-top: 1px solid #333;
+            padding-top: 15px;
+        }
+
+        .section-title:first-of-type {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .job {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 5px;
+        }
+
+        .company {
+            font-weight: bold;
+            font-size: 12pt;
+        }
+
+        .company a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+
+        .company a:hover {
+            text-decoration: underline;
+        }
+
+        .location {
+            color: #666;
+            font-style: italic;
+        }
+
+        .dates {
+            color: #666;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .position {
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        .job ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .job li {
+            margin-bottom: 6px;
+            position: relative;
+            padding-left: 15px;
+            text-align: justify;
+        }
+
+        .job li:before {
+            content: "●";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .skills-section {
+            margin-top: 30px;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .skill-category {
+            font-weight: bold;
+        }
+
+        .skill-list {
+            color: #555;
+        }
+
+        .education {
+            margin-top: 25px;
+        }
+
+        .education-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .education-details {
+            flex: 1;
+        }
+
+        .education-year {
+            color: #666;
+            font-weight: bold;
+            white-space: nowrap;
+            margin-left: 20px;
+        }
+
+        .highlight {
+            font-weight: bold;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                margin: 0;
+                padding: 15mm;
+                font-size: 10pt;
+            }
+            
+            .section-title {
+                font-size: 12pt;
+            }
+            
+            .name {
+                font-size: 22pt;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="name">ALEXANDER KONOPLEV</div>
+        <div class="contact-info">
+            Berlin, Germany • +49-176-457-52129 • <a href="mailto:alexander@konoplev.me">alexander@konoplev.me</a> • <a href="https://www.linkedin.com/in/akonoplev/">linkedin.com/in/knplv</a>
+        </div>
+    </div>
+
+    <div class="summary">
+        <div class="summary-left">
+            <ul>
+                <li>Background in <span class="highlight">Business Process<br>Modeling</span> (since 2019 at <a href="https://signavio.com/" class="highlight">SAP</a>),<br><span class="highlight">AdTech</span> (2016-2018 at <a href="https://web.archive.org/web/20240217074504/https://www.glispa.com/" class="highlight">Glispa</a>),<br><span class="highlight">Robotics</span> (2014-2016 at <a href="https://amazon.com/" class="highlight">Amazon</a>),<br><span class="highlight">mobile networking</span> (2005-2014)</li>
+            </ul>
+        </div>
+        <div class="summary-right">
+            <ul>
+                <li><span class="highlight">20+</span> years of Software Engineering experience</li>
+                <li><span class="highlight">10+ years</span> of leading distributed teams</li>
+                <li>tech blog at <a href="https://konoplev.me/en/programming/index/1.html">https://konoplev.me</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section-title">PROFESSIONAL EXPERIENCE</div>
+
+    <div class="job">
+        <div class="job-header">
+            <div>
+                <span class="company"><a href="https://signavio.com/">SAP</a></span>, <span class="location">Berlin, Germany</span>
+            </div>
+            <div class="dates">Aug 2019 – Present</div>
+        </div>
+        <div class="position">Tech Lead</div>
+        <ul>
+            <li>Hired the backend part of the team. Organized the development process and on-call</li>
+            <li>Empowered the whole team to be more efficient and happy through one-on-one sessions, streamlining processes, and fostering collaboration.</li>
+            <li>As a developer, I made the system available to external customers by introducing APIs. Migrated some legacy services to the modern tech stack and split them into microservices. Implemented several AI features.</li>
+            <li>As a DevOps, I contributed to migrating the entire system from a bare-metal cluster with manual deployment to a cloud-based infrastructure with automated deployment processes.</li>
+        </ul>
+    </div>
+
+    <div class="job">
+        <div class="job-header">
+            <div>
+                <span class="company">Quidtree (start-up, missed PMF)</span>, <span class="location">Berlin, Germany</span>
+            </div>
+            <div class="dates">Sep 2018 – Aug 2019</div>
+        </div>
+        <div class="position">Software Architect</div>
+        <ul>
+            <li>Designed the architecture of a data feed management system. This SaaS platform allows e-commerce businesses to transform their data from any format (e.g. CSV, XML, JSON) to a format required by marketing channels (such as Google Merchant Center and Facebook Products), edit, analyze, and upload it.</li>
+            <li>Defined and enforced coding standards, reducing code review time by 30%. Actively participated in the development as a full-stack developer</li>
+            <li>Set up staging and production Kubernetes clusters in the Azure cloud and established CI/CD pipelines</li>
+        </ul>
+    </div>
+
+    <div class="job">
+        <div class="job-header">
+            <div>
+                <span class="company"><a href="https://web.archive.org/web/20240217074504/https://www.glispa.com/">Glispa Global Group</a></span>, <span class="location">Berlin, Germany</span>
+            </div>
+            <div class="dates">Oct 2016 – Sep 2018</div>
+        </div>
+        <div class="position">Senior Java Developer</div>
+        <ul>
+            <li>Developed components of the advertising system serving 2M daily active users and implemented comprehensive test suites achieving 100% coverage, including performance tests.</li>
+            <li>Split huge library into microservices to improve development and release velocity</li>
+            <li>Integrated Kafka to decouple components and improve statistics gathering</li>
+        </ul>
+    </div>
+
+    <div class="job">
+        <div class="job-header">
+            <div>
+                <span class="company"><a href="https://amazon.com/">Amazon</a></span>, <span class="location">Berlin, Germany</span>
+            </div>
+            <div class="dates">Oct 2014 – Sep 2016</div>
+        </div>
+        <div class="position">Software Engineer</div>
+        <ul>
+            <li>Developed components of the system managing tens of thousands of robots in Amazon fulfillment centers. Took a lead role on one of the components</li>
+            <li>Saved tens of thousands of dollars by replacing DynamoDB with a distributed in-memory grid.</li>
+        </ul>
+    </div>
+
+    <div class="job">
+        <div class="job-header">
+            <div>
+                <span class="company">Various Companies (<a href="https://intech-global.com/en/">Intech Global</a>, <a href="https://auriga.com/">Auriga</a>, <a href="https://www.orioninc.com/">Mera</a>)</span>
+            </div>
+            <div class="dates">Oct 2005 – Oct 2014</div>
+        </div>
+        <div class="position">Team Lead</div>
+        <ul>
+            <li>Developed GSM network element simulators handling 60k parallel connections</li>
+            <li>Developed multimedia entertainment web portals with 20K daily unique users</li>
+            <li>Led distributed teams</li>
+        </ul>
+    </div>
+
+    <div class="section-title">HARD SKILLS</div>
+    <div class="skills-section">
+        <div class="skills-grid">
+            <div class="skill-category">Languages:</div>
+            <div class="skill-list">Kotlin, Java, TypeScript, C++</div>
+        </div>
+        <div class="skills-grid">
+            <div class="skill-category">Main Frameworks:</div>
+            <div class="skill-list">Spring Boot, Spock, Angular</div>
+        </div>
+        <div class="skills-grid">
+            <div class="skill-category">Databases:</div>
+            <div class="skill-list">MongoDB, MySQL, PostgreSQL, DynamoDB</div>
+        </div>
+        <div class="skills-grid">
+            <div class="skill-category">Queues, Caches:</div>
+            <div class="skill-list">Kafka, SQS, Hazelcast, Redis</div>
+        </div>
+        <div class="skills-grid">
+            <div class="skill-category">Monitoring and performance:</div>
+            <div class="skill-list">InfluxDB, Prometheus, Grafana, Dynatrace, Gatling</div>
+        </div>
+        <div class="skills-grid">
+            <div class="skill-category">DevOps:</div>
+            <div class="skill-list">CircleCI, DroneCI, Gitlab, Docker, Kubernetes, Helm, Nginx, Amazon AWS (EKS, EC2, Lambda), Microsoft Azure (AKS)</div>
+        </div>
+    </div>
+
+    <div class="section-title">EDUCATION</div>
+    <div class="education">
+        <div class="education-item">
+            <div class="education-details">
+                <div class="highlight">N.I Lobachevsky State University of Nizhny Novgorod</div>
+                <div>Specialist in Applied Mathematics and Computer Science, Faculty of Computational Mathematics and Cybernetics</div>
+            </div>
+            <div class="education-year">2001-2006</div>
+        </div>
+    </div>
+</body>
+</html>
