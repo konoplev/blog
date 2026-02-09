@@ -1,0 +1,98 @@
+{
+  "id": "example-001",
+  "title": "AnimDeck Demo",
+  "slides": [
+    {
+      "id": "slide-001",
+      "type": "text",
+      "html": "<h1>Welcome to AnimDeck</h1><p>Create beautiful animated presentations</p>"
+    },
+    {
+      "id": "slide-002",
+      "type": "animation",
+      "currentSceneIndex": 0,
+      "scenes": [
+        {
+          "id": "scene-001",
+          "shapes": [
+            {
+              "id": "shape-rect-1",
+              "type": "rect",
+              "x": 100,
+              "y": 200,
+              "width": 150,
+              "height": 100,
+              "rotation": 0,
+              "style": {
+                "fill": "#4A90D9",
+                "stroke": "#2C5A8C",
+                "strokeWidth": 2,
+                "opacity": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "scene-002",
+          "shapes": [
+            {
+              "id": "shape-rect-1",
+              "type": "rect",
+              "x": 400,
+              "y": 200,
+              "width": 150,
+              "height": 100,
+              "rotation": 0,
+              "style": {
+                "fill": "#4A90D9",
+                "stroke": "#2C5A8C",
+                "strokeWidth": 2,
+                "opacity": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "scene-003",
+          "shapes": [
+            {
+              "id": "shape-rect-1",
+              "type": "rect",
+              "x": 400,
+              "y": 200,
+              "width": 200,
+              "height": 150,
+              "rotation": 45,
+              "style": {
+                "fill": "#E74C3C",
+                "stroke": "#C0392B",
+                "strokeWidth": 2,
+                "opacity": 1
+              }
+            },
+            {
+              "id": "shape-ellipse-1",
+              "type": "ellipse",
+              "x": 100,
+              "y": 300,
+              "width": 120,
+              "height": 120,
+              "rotation": 0,
+              "style": {
+                "fill": "#2ECC71",
+                "stroke": "#27AE60",
+                "strokeWidth": 2,
+                "opacity": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "slide-003",
+      "type": "text",
+      "html": "<h2>Features</h2><ul><li>Draw shapes on canvas</li><li>Create multiple scenes</li><li>Export to standalone HTML</li><li>Reveal.js auto-animate transitions</li></ul>"
+    }
+  ]
+}
